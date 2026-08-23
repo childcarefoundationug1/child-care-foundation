@@ -431,6 +431,8 @@ function getAdminToken() {
     return sessionStorage.getItem("ccf_admin_token");
 }
 
+const API_URL = "https://child-care-foundation-api-production.up.railway.app";
+
 async function authFetch(url, options = {}) {
 
     const token = getAdminToken();
@@ -476,7 +478,7 @@ async function loadDonations() {
     try {
 
         const response =
-            await authFetch("/api/admin/donations", {
+            await authFetch(`${API_URL}/api/admin/donations`, {
     credentials: "include"
 });
 
@@ -625,7 +627,7 @@ async function verifyDonation(reference) {
     try {
 
         const response =
-            await authFetch(`/api/admin/donations/${encodeURIComponent(reference)}/verify`,
+            await authFetch(`${API_URL}/api/admin/donations/${encodeURIComponent(reference)}/verify`,
                 {
                     method: "POST"
                 }
@@ -696,7 +698,7 @@ async function loadVolunteers() {
     try {
 
         const response =
-            await authFetch("/api/admin/volunteers", {
+            await authFetch(`${API_URL}/api/admin/volunteers`, {
                 credentials: "include"
             });
 
@@ -784,7 +786,7 @@ async function updateVolunteerStatus(id, status) {
 
     try {
 
-        const response = await authFetch(`/api/admin/volunteers/${id}/status`,
+        const response = await authFetch(`${API_URL}/api/admin/volunteers/${id}/status`,
             {
                 method: "POST",
                 credentials: "include",
@@ -827,7 +829,7 @@ async function loadMessages() {
 
         const response =
             await authFetch(
-                "/api/admin/messages",
+                `${API_URL}/api/admin/messages`,
                 {
                     credentials: "include"
                 }
@@ -978,7 +980,7 @@ async function markMessageRead(id) {
     try {
 
         const response =
-            await authFetch(`/api/admin/messages/${id}/read`,
+            await authFetch(`${API_URL}/api/admin/messages/${id}/read`,
                 {
                     method: "PATCH",
                     credentials: "include"
@@ -1022,7 +1024,7 @@ async function deleteMessage(id) {
     try {
 
         const response =
-            await authFetch(`/api/admin/messages/${id}`,
+            await authFetch(`${API_URL}/api/admin/messages/${id}`,
                 {
                     method: "DELETE",
                     credentials: "include"
@@ -1110,7 +1112,7 @@ document
 
             const response =
                 await authFetch(
-                    "/api/admin/gallery/upload",
+                    `${API_URL}/api/admin/gallery/upload`,
                     {
                         method: "POST",
                         credentials: "include",
