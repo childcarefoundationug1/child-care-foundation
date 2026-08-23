@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+  command = ""
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://child-care-foundation-api-production.up.railway.app/api/:splat"
+  status = 200
+  force = true

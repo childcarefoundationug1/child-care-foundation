@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build/cache
+.next/
+dist/
+dist-ssr/
+.cache/
+*.local
+
+# Netlify local state
+.netlify/
+
+# Environment/secrets
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Backups
+*.backup
+*.bak
+*.old
+*.tmp
+*.backup-*
+*.before-*
+*.backup-before-*
+
+# ZIP archives / deployment packages
+*.zip
+
+# Local development/test files
+cookies.txt
+jstest.html
+
+# Local archive - never commit
+_local-archive/
+
+# Root-level local deployment packages
+*.zip

@@ -1,0 +1,177 @@
+<link rel="stylesheet" href="css/style.css">
+
+<!-- MTN MOBILE MONEY --><div class="payment-card mtn-card"><div class="payment-logo">
+    MTN
+</div>
+
+<h2>MTN Mobile Money</h2>
+
+<p class="payment-description">
+    Support Child Care Foundation using MTN Mobile Money.
+</p>
+
+<form id="mtnDonationForm" class="donation-form">
+
+    <label for="donorName">
+        Full Name
+    </label>
+
+    <input
+        type="text"
+        id="donorName"
+        name="name"
+        placeholder="Enter your full name"
+        required
+    >
+
+
+    <label for="donorPhone">
+        MTN Phone Number
+    </label>
+
+    <input
+        type="tel"
+        id="donorPhone"
+        name="phone"
+        placeholder="e.g. 077xxxxxxx"
+        required
+    >
+
+
+    <label for="donationAmount">
+        Donation Amount (UGX)
+    </label>
+
+    <input
+        type="number"
+        id="donationAmount"
+        name="amount"
+        placeholder="Enter amount"
+        min="500"
+        step="100"
+        required
+    >
+
+
+    <button
+        type="submit"
+        class="btn btn-primary payment-button"
+        id="mtnDonateButton"
+    >
+        Donate with MTN
+    </button>
+
+    <div
+        id="mtnPaymentMessage"
+        class="payment-message"
+    ></div>
+
+</form>
+
+<div class="payment-details">
+
+    <div>
+        <span>Foundation Number</span>
+        <strong>+256 793449784</strong>
+    </div>
+
+    <div>
+        <span>Account Name</span>
+        <strong>Given okongo</strong>
+    </div>
+
+</div>
+
+</div>
+<!-- AIRTEL MOBILE MONEY -->
+<div class="payment-card airtel-card">
+    <div class="payment-logo">AIRTEL</div>
+
+    <h2>Airtel Mobile Money</h2>
+
+    <p class="payment-description">
+        Support Child Care Foundation using Airtel Mobile Money.
+    </p>
+
+    <form id="airtelDonationForm" class="donation-form">
+
+        <label for="airtelDonorName">Full Name</label>
+
+        <input
+            type="text"
+            id="airtelDonorName"
+            name="name"
+            placeholder="Enter your full name"
+            required
+        >
+
+        <label for="airtelDonorPhone">Airtel Phone Number</label>
+
+        <input
+            type="tel"
+            id="airtelDonorPhone"
+            name="phone"
+            placeholder="e.g. 070xxxxxxx"
+            required
+        >
+
+        <label for="airtelDonationAmount">Donation Amount (UGX)</label>
+
+        <input
+            type="number"
+            id="airtelDonationAmount"
+            name="amount"
+            placeholder="Enter amount"
+            min="500"
+            step="100"
+            required
+        >
+
+        <button
+            type="submit"
+            class="btn btn-primary payment-button"
+            id="airtelDonateButton"
+        >
+            Donate with Airtel
+        </button>
+
+        <div
+            id="airtelPaymentMessage"
+            class="payment-message"
+        ></div>
+
+    </form>
+
+    <div class="payment-details">
+
+        <div>
+            <span>Foundation Number</span>
+            <strong>+256 730463790</strong>
+        </div>
+
+        <div>
+            <span>Account Name</span>
+            <strong>Given okongo</strong>
+        </div>
+
+    </div>
+</div>
+</main>
+
+<footer class="footer">
+
+    <div class="container footer-grid">
+
+        <div>
+            <h3>Child Care Foundation</h3>
+            <p>Building Brighter Tomorrows.</p>
+        </div>
+
+    </div>
+
+</footer>
+
+<script src="js/script.js"></script>
+
+</body>
+</html>

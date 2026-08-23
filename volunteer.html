@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Volunteer | Child Care Foundation</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<header class="header">
+
+    <div class="container nav-container">
+
+        <a href="index.html" class="logo">
+            <img
+    class="foundation-logo"
+    src="/uploads/gallery/1786648337992-1000005898.jpg"
+    alt="Child Care Foundation logo"
+>
+
+            <div class="logo-text">
+                <strong>Child Care</strong>
+                <span>Foundation</span>
+            </div>
+        </a>
+
+        <nav class="navigation">
+            <a href="index.html">Home</a>
+            <a href="about.html">About</a>
+            <a href="gallery.html">Gallery</a>
+            <a href="donate.html">Donate</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+
+    </div>
+
+</header>
+
+<main class="container">
+
+    <h1>Become a Volunteer</h1>
+
+    <p>
+        Thank you for your interest in supporting vulnerable children.
+        Please complete the form below to join our volunteer team.
+    </p>
+<form id="volunteerForm">
+
+    <label>Full Name</label><br>
+    <input type="text" id="fullName" required><br><br>
+
+    <label>Phone Number</label><br>
+    <input type="tel" id="phone" required><br><br>
+
+    <label>Email Address</label><br>
+    <input type="email" id="email" required><br><br>
+
+    <label>District</label><br>
+    <input type="text" id="district" required><br><br>
+
+    <label>Skills</label><br>
+    <input type="text" id="skills"
+           placeholder="Teaching, First Aid, Community Work"><br><br>
+
+    <label>Availability</label><br>
+    <input type="text" id="availability"
+           placeholder="Weekdays, Weekends, Full-time"><br><br>
+
+    <label>Why do you want to volunteer?</label><br>
+    <textarea id="reason" rows="5" required></textarea><br><br>
+
+    <button type="submit">
+        Submit Application
+    </button>
+
+</form>
+
+<p id="message"></p>
+<p id="message"></p>
+<script>
+
+const form = document.getElementById("volunteerForm");
+const message = document.getElementById("message");
+
+form.addEventListener("submit", async (event) => {
+
+    event.preventDefault();
+
+    const volunteer = {
+        fullName: document.getElementById("fullName").value,
+        phone: document.getElementById("phone").value,
+        email: document.getElementById("email").value,
+        district: document.getElementById("district").value,
+        skills: document.getElementById("skills").value,
+        availability: document.getElementById("availability").value,
+        reason: document.getElementById("reason").value
+    };
+
+    try {
+
+        const response = await fetch("/api/volunteers", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(volunteer)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            message.style.color = "green";
+            message.textContent =
+                "Thank you! Your volunteer application has been submitted.";
+            form.reset();
+        } else {
+            message.style.color = "red";
+            message.textContent =
+                data.message || "Submission failed.";
+        }
+
+    } catch (error) {
+
+        message.style.color = "red";
+        message.textContent =
+            "Unable to connect to the server.";
+
+    }
+
+});
+
+</script>
+
+</main>
+
+</body>
+</html>

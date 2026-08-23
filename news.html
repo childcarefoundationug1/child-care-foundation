@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>News & Events | Child Care Foundation</title>
+
+    <meta
+        name="description"
+        content="News, updates and upcoming events from Child Care Foundation."
+    >
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .news-page {
+            padding: 90px 20px;
+            background: #f1f8f4;
+        }
+
+        .news-intro {
+            max-width: 800px;
+            margin: 0 auto 50px;
+            text-align: center;
+        }
+
+        .news-intro h1 {
+            font-size: clamp(35px, 6vw, 58px);
+            color: #075c32;
+            margin-bottom: 20px;
+        }
+
+        .news-intro p {
+            line-height: 1.8;
+        }
+
+        .news-grid {
+            max-width: 1100px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 28px;
+        }
+
+        .news-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,.10);
+            transition: transform .3s ease, box-shadow .3s ease;
+        }
+
+        .news-card:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 18px 35px rgba(0,0,0,.15);
+        }
+
+        .news-card img {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .news-content {
+            padding: 25px;
+        }
+
+        .news-badge {
+            display: inline-block;
+            padding: 7px 13px;
+            border-radius: 20px;
+            background: #e5f5eb;
+            color: #075c32;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .news-content h2 {
+            color: #075c32;
+            margin: 5px 0 12px;
+        }
+
+        .news-content p {
+            line-height: 1.7;
+        }
+
+        .news-date {
+            font-size: 13px;
+            opacity: .7;
+            margin-bottom: 12px;
+        }
+
+        .transparency-note {
+            max-width: 900px;
+            margin: 40px auto 0;
+            padding: 18px;
+            background: #fff8e1;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        @media (max-width: 700px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="header">
+
+    <div class="container nav-container">
+
+        <a href="index.html" class="logo">
+            <img
+    class="foundation-logo"
+    src="/uploads/gallery/1786648337992-1000005898.jpg"
+    alt="Child Care Foundation logo"
+>
+
+            <div class="logo-text">
+                <strong>Child Care</strong>
+                <span>Foundation</span>
+            </div>
+        </a>
+
+        <button class="menu-toggle" id="menuToggle">
+            ☰
+        </button>
+
+        <nav class="navigation" id="navigation">
+            <a href="index.html">Home</a>
+            <a href="about.html">About</a>
+            <a href="gallery.html">Gallery</a>
+            <a href="stories.html">Success Stories</a>
+            <a href="news.html" class="active">News & Events</a>
+            <a href="volunteer.html">Volunteer</a>
+            <a href="supporters.html">Supporters</a>
+            <a href="donate.html" class="nav-donate">Donate</a>
+            <a href="contact.html">Contact</a>
+            <a href="privacy.html">Privacy</a>
+        </nav>
+
+    </div>
+
+</header>
+
+<main>
+
+<section class="news-page">
+
+    <div class="news-intro">
+
+        <span class="section-label">
+            NEWS & EVENTS
+        </span>
+
+        <h1>
+            Stay Connected With
+            <span>Our Work</span>
+        </h1>
+
+        <p>
+            Follow our activities, announcements and upcoming
+            opportunities to support vulnerable children and
+            communities.
+        </p>
+
+    </div>
+
+
+    <div class="news-grid">
+
+        <!-- ITEM 1 -->
+
+        <article class="news-card">
+
+            <img
+                src="/uploads/gallery/1786613907899-1000007992.jpg"
+                alt="Children studying"
+                loading="lazy"
+            >
+
+            <div class="news-content">
+
+                <span class="news-badge">
+                    Planned Initiative
+                </span>
+
+                <div class="news-date">
+                    Education Support
+                </div>
+
+                <h2>
+                    Supporting Children's Education
+                </h2>
+
+                <p>
+                    Child Care Foundation aims to support vulnerable
+                    children with educational materials and
+                    opportunities that can help them remain engaged
+                    in learning.
+                </p>
+
+            </div>
+
+        </article>
+
+
+        <!-- ITEM 2 -->
+
+        <article class="news-card">
+
+            <img
+                src="/uploads/gallery/1786613914146-1000007989.jpg"
+                alt="Food and nutrition support"
+                loading="lazy"
+            >
+
+            <div class="news-content">
+
+                <span class="news-badge">
+                    Planned Initiative
+                </span>
+
+                <div class="news-date">
+                    Food & Nutrition
+                </div>
+
+                <h2>
+                    Promoting Better Nutrition
+                </h2>
+
+                <p>
+                    We aim to support vulnerable children and
+                    families with access to nutritious food and
+                    practical community assistance.
+                </p>
+
+            </div>
+
+        </article>
+
+
+        <!-- ITEM 3 -->
+
+        <article class="news-card">
+
+            <img
+                src="/uploads/gallery/healthcare-children.jpg"
+                alt="Children receiving healthcare"
+                loading="lazy"
+            >
+
+            <div class="news-content">
+
+                <span class="news-badge">
+                    Planned Initiative
+                </span>
+
+                <div class="news-date">
+                    Healthcare
+                </div>
+
+                <h2>
+                    Improving Access to Healthcare
+                </h2>
+
+                <p>
+                    We aim to help vulnerable children access
+                    essential healthcare and health-related support
+                    when resources and partnerships are available.
+                </p>
+
+            </div>
+
+        </article>
+
+
+        <!-- ITEM 4 -->
+
+        <article class="news-card">
+
+            <img
+                src="/uploads/gallery/1786613858421-1000008013.jpg"
+                alt="Children and community support"
+                loading="lazy"
+            >
+
+            <div class="news-content">
+
+                <span class="news-badge">
+                    Community
+                </span>
+
+                <div class="news-date">
+                    Community Support
+                </div>
+
+                <h2>
+                    Building Stronger Communities
+                </h2>
+
+                <p>
+                    We believe lasting change is strengthened when
+                    families, volunteers and communities work
+                    together to support children.
+                </p>
+
+            </div>
+
+        </article>
+
+    </div>
+
+
+    <div class="transparency-note">
+
+        <strong>Transparency notice:</strong>
+        Items marked as planned initiatives describe goals or
+        intended activities. They are not claims that a particular
+        event or activity has already taken place. Published news
+        will be updated with verified dates, locations and details
+        when activities actually occur.
+
+    </div>
+
+</section>
+
+</main>
+
+
+<footer class="footer">
+
+    <div class="container">
+
+        <div class="footer-bottom">
+
+            <p>
+                © 2026 Child Care Foundation.
+                All Rights Reserved.
+            </p>
+
+            <p>
+                Website Designed & Developed by
+                <strong>OGJ</strong>
+            </p>
+
+        </div>
+
+    </div>
+
+</footer>
+
+
+<script src="js/script.js"></script>
+
+</body>
+</html>

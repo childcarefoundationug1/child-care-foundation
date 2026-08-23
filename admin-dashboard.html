@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard - Child Care Foundation</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f8f4;
+            color: #222;
+        }
+
+        header {
+            background: #087a42;
+            color: white;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            opacity: 0.9;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1100px;
+            margin: 25px auto;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            border: none;
+            border-radius: 7px;
+            padding: 11px 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .refresh {
+            background: #087a42;
+            color: white;
+        }
+
+        .logout {
+            background: #d62828;
+            color: white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        .card h3 {
+            margin: 0 0 8px;
+            color: #087a42;
+        }
+
+        .card strong {
+            font-size: 25px;
+        }
+
+        .table-box {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            overflow-x: auto;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 750px;
+        }
+
+        th,
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #087a42;
+            color: white;
+        }
+
+        .status {
+            padding: 5px 9px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .awaiting_verification {
+            background: #cfe8ff;
+            color: #075985;
+        }
+
+        .completed {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .verify {
+            background: #087a42;
+            color: white;
+            padding: 7px 10px;
+        }
+
+        .verify:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+
+        #message {
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 20px;
+            }
+
+            .container {
+                width: 97%;
+            }
+        }
+    
+.foundation-logo{
+    width:60px;
+    height:60px;
+    object-fit:contain;
+    border-radius:50%;
+    vertical-align:middle;
+    margin-right:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1><img class="foundation-logo"
+src="/uploads/gallery/1786648337992-1000005898.jpg"
+alt="Child Care Foundation logo"> Child Care Foundation</h1>
+    <p>Administration Dashboard</p>
+</header>
+
+<div class="container">
+
+    <div class="top-bar">
+        <h2>Donation Management</h2>
+
+        <div>
+            <button class="refresh" onclick="loadDonations()">
+                🔄 Refresh
+            </button>
+
+            <button class="logout" onclick="logout()">
+                Logout
+            </button>
+        </div>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="stats">
+
+        <div class="card">
+            <h3>Total Donations</h3>
+            <strong id="totalDonations">0</strong>
+        </div>
+
+        <div class="card">
+            <h3>Pending</h3>
+            <strong id="pendingDonations">0</strong>
+        </div>
+
+        <div class="card">
+            <h3>Awaiting Verification</h3>
+            <strong id="awaitingDonations">0</strong>
+        </div>
+
+        <div class="card">
+            <h3>Completed</h3>
+            <strong id="completedDonations">0</strong>
+        </div>
+
+    </div>
+
+    <div class="table-box">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Donor</th>
+                    <th>Phone</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="donationsTable">
+                <tr>
+                    <td colspan="7">
+                        Loading donations...
+                    </td>
+                </tr>
+            </tbody>
+
+        </table>
+
+    </div>
+
+<!-- CONTACT MESSAGES -->
+
+<div class="section">
+
+    <div class="section-header">
+        <h2>📩 Contact Messages</h2>
+
+        <button class="refresh" onclick="loadMessages()">
+            🔄 Refresh Messages
+        </button>
+    </div>
+
+    <div class="stats">
+
+        <div class="stat-card">
+            <h3>Total Messages</h3>
+            <p id="totalMessages">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Unread</h3>
+            <p id="unreadMessages">0</p>
+        </div>
+
+    </div>
+
+    <div style="overflow-x:auto;">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Subject</th>
+                    <th>Message</th>
+                    <th>Received</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody id="messagesTable">
+
+                <tr>
+                    <td colspan="7">
+                        Loading messages...
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- VOLUNTEER MANAGEMENT -->
+
+<div class="section">
+
+    <div class="section-header">
+        <h2>Volunteer Management</h2>
+
+        <button class="refresh" onclick="loadVolunteers()">
+            🔄 Refresh Volunteers
+        </button>
+    </div>
+
+    <div id="volunteerMessage"></div>
+
+    <div class="stats">
+
+        <div class="stat-card">
+            <h3>Total Volunteers</h3>
+            <p id="totalVolunteers">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Pending</h3>
+            <p id="pendingVolunteers">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Approved</h3>
+            <p id="approvedVolunteers">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Rejected</h3>
+            <p id="rejectedVolunteers">0</p>
+        </div>
+
+    </div>
+
+    <div style="overflow-x:auto;">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>District</th>
+                    <th>Skills</th>
+                    <th>Availability</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody id="volunteersTable">
+
+                <tr>
+                    <td colspan="7">
+                        Loading volunteers...
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+<!-- GALLERY MANAGEMENT -->
+
+<div class="section" style="margin-top: 30px;">
+
+    <div class="section-header">
+        <h2>Gallery Management</h2>
+    </div>
+
+    <div class="card">
+
+        <h3>Upload Gallery Image</h3>
+
+        <p>
+            Select an image to add to the Child Care Foundation gallery.
+        </p>
+
+        <form id="galleryUploadForm">
+
+            <input
+                type="file"
+                id="galleryImage"
+                name="image"
+                accept="image/*"
+                required
+            >
+
+            <br><br>
+
+            <button
+                type="submit"
+                class="refresh"
+            >
+                📤 Upload Image
+            </button>
+
+        </form>
+
+        <div id="galleryMessage"></div>
+
+    </div>
+
+</div>
+<script>
+
+function getAdminToken() {
+    return sessionStorage.getItem("ccf_admin_token");
+}
+
+async function authFetch(url, options = {}) {
+
+    const token = getAdminToken();
+
+    if (!token) {
+        window.location.href = "/admin.html";
+        throw new Error("Admin authentication required.");
+    }
+
+    const headers = new Headers(options.headers || {});
+    headers.set("Authorization", "Bearer " + token);
+
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+
+    if (response.status === 401) {
+        sessionStorage.removeItem("ccf_admin_token");
+        window.location.href = "/admin.html";
+        throw new Error("Admin session expired.");
+    }
+
+    return response;
+}
+
+async function loadDonations() {
+
+    const table =
+        document.getElementById("donationsTable");
+
+    const message =
+        document.getElementById("message");
+
+    table.innerHTML = `
+        <tr>
+            <td colspan="7">
+                Loading donations...
+            </td>
+        </tr>
+    `;
+
+    try {
+
+        const response =
+            await authFetch("/api/admin/donations", {
+    credentials: "include"
+});
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+
+            throw new Error(
+                data.message || "Unable to load donations."
+            );
+
+        }
+
+        const donations =
+            data.donations || [];
+
+        document.getElementById("totalDonations").textContent =
+            donations.length;
+
+        document.getElementById("pendingDonations").textContent =
+            donations.filter(d => d.status === "pending").length;
+
+        document.getElementById("awaitingDonations").textContent =
+            donations.filter(
+                d => d.status === "awaiting_verification"
+            ).length;
+
+        document.getElementById("completedDonations").textContent =
+            donations.filter(
+                d => d.status === "completed"
+            ).length;
+
+        if (donations.length === 0) {
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        No donations found.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        table.innerHTML =
+            donations.map(donation => {
+
+                const status =
+                    donation.status || "unknown";
+
+                const canVerify =
+    status === "pending" ||
+    status === "awaiting_verification";
+
+                return `
+                    <tr>
+
+                        <td>
+                            ${escapeHtml(
+                                donation.reference
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                donation.donor_name
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                donation.phone
+                            )}
+                        </td>
+
+                        <td>
+                            UGX ${Number(
+                                donation.amount
+                            ).toLocaleString()}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                donation.payment_method
+                            )}
+                        </td>
+
+                        <td>
+                            <span class="status ${status}">
+                                ${escapeHtml(status)}
+                            </span>
+                        </td>
+
+                        <td>
+
+                            <button
+                                class="verify"
+                                onclick="verifyDonation('${escapeHtml(donation.reference)}')"
+                                ${canVerify ? "" : "disabled"}
+                            >
+                                ${canVerify ? "Verify" : "Verified"}
+                            </button>
+
+                        </td>
+
+                    </tr>
+                `;
+
+            }).join("");
+
+        message.textContent =
+            `Loaded ${donations.length} donation(s).`;
+
+        message.style.color = "#087a42";
+
+    } catch (error) {
+
+        console.error(error);
+        
+        message.textContent =
+            "Unable to load donations.";
+
+        message.style.color = "red";
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Unable to load donations.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+
+async function verifyDonation(reference) {
+
+    if (!confirm(
+        "Are you sure you want to verify this donation?"
+    )) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await authFetch(`/api/admin/donations/${encodeURIComponent(reference)}/verify`,
+                {
+                    method: "POST"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!data.success) {
+
+            alert(
+                data.message ||
+                "Unable to verify donation."
+            );
+
+            return;
+        }
+
+        alert(
+            "Donation verified successfully."
+        );
+
+        loadDonations();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Unable to connect to the server."
+        );
+    }
+}
+
+
+function logout() {
+    sessionStorage.removeItem("ccf_admin_token");
+    window.location.href = "/admin.html";
+}
+
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+async function loadVolunteers() {
+
+    const table =
+        document.getElementById("volunteersTable");
+
+    const message =
+        document.getElementById("volunteerMessage");
+
+    table.innerHTML = `
+        <tr>
+            <td colspan="7">
+                Loading volunteers...
+            </td>
+        </tr>
+    `;
+
+    try {
+
+        const response =
+            await authFetch("/api/admin/volunteers", {
+                credentials: "include"
+            });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to load volunteers."
+            );
+        }
+
+        const volunteers = data.volunteers || [];
+
+        document.getElementById("totalVolunteers").textContent =
+            volunteers.length;
+
+        document.getElementById("pendingVolunteers").textContent =
+            volunteers.filter(v => v.status === "pending").length;
+
+        document.getElementById("approvedVolunteers").textContent =
+            volunteers.filter(v => v.status === "approved").length;
+
+        document.getElementById("rejectedVolunteers").textContent =
+            volunteers.filter(v => v.status === "rejected").length;
+
+        if (volunteers.length === 0) {
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        No volunteer applications yet.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        table.innerHTML = volunteers.map(volunteer => `
+            <tr>
+                <td>${volunteer.fullName || "-"}</td>
+                <td>${volunteer.phone || "-"}</td>
+                <td>${volunteer.email || "-"}</td>
+                <td>${volunteer.district || "-"}</td>
+                <td>${volunteer.skills || "-"}</td>
+                <td>${volunteer.availability || "-"}</td>
+                <td>${volunteer.status || "pending"}</td>
+
+<td>
+    <button onclick="updateVolunteerStatus('${volunteer.id}','approved')">
+        ✅ Approve
+    </button>
+
+    <button onclick="updateVolunteerStatus('${volunteer.id}','rejected')">
+        ❌ Reject
+    </button>
+</td>
+            </tr>
+        `).join("");
+
+    } catch (error) {
+
+        console.error(
+            "Volunteer loading error:",
+            error
+        );
+
+        message.textContent =
+            error.message || "Unable to load volunteers.";
+
+        message.style.color = "red";
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Unable to load volunteers.
+                </td>
+            </tr>
+        `;
+   }
+
+}
+
+async function updateVolunteerStatus(id, status) {
+
+    try {
+
+        const response = await authFetch(`/api/admin/volunteers/${id}/status`,
+            {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ status })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to update volunteer."
+            );
+        }
+
+         
+
+        await loadVolunteers();
+
+    } catch (error) {
+
+        alert(
+            error.message ||
+            "Unable to update volunteer."
+        );
+
+    }
+
+}
+
+async function loadMessages() {
+
+    const table =
+        document.getElementById("messagesTable");
+
+    try {
+
+        const response =
+            await authFetch(
+                "/api/admin/messages",
+                {
+                    credentials: "include"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to load messages."
+            );
+        }
+
+        const messages =
+            Array.isArray(data.messages)
+                ? data.messages
+                : [];
+
+        document.getElementById(
+            "totalMessages"
+        ).textContent = messages.length;
+
+        document.getElementById(
+            "unreadMessages"
+        ).textContent =
+            messages.filter(
+                item => item.status === "unread"
+            ).length;
+
+        if (messages.length === 0) {
+
+            table.innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        No contact messages yet.
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+        table.innerHTML =
+            messages
+                .slice()
+                .reverse()
+                .map(message => `
+
+                    <tr>
+
+                        <td>
+                            ${escapeHtml(message.name)}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(message.email)}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(message.subject)}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(message.message)}
+                        </td>
+
+                        <td>
+                            ${new Date(
+                                message.receivedAt
+                            ).toLocaleString()}
+                        </td>
+
+                        <td>
+                            ${message.status === "unread"
+                                ? "🔵 Unread"
+                                : "✅ Read"}
+                        </td>
+
+                        <td>
+
+                            ${
+                                message.status === "unread"
+                                ? `
+                                    <button
+                                        class="verify"
+                                        onclick="markMessageRead('${message.id}')"
+                                    >
+                                        ✅ Read
+                                    </button>
+                                  `
+                                : ""
+                            }
+
+                            <button
+                                onclick="deleteMessage('${message.id}')"
+                                style="
+                                    background:#d62828;
+                                    color:white;
+                                    margin-top:5px;
+                                "
+                            >
+                                🗑️ Delete
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                `)
+                .join("");
+
+    } catch (error) {
+
+        console.error(
+            "Messages loading error:",
+            error
+        );
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Unable to load messages.
+                </td>
+            </tr>
+        `;
+
+    }
+
+}
+
+
+function escapeHtml(value) {
+
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+async function markMessageRead(id) {
+
+    try {
+
+        const response =
+            await authFetch(`/api/admin/messages/${id}/read`,
+                {
+                    method: "PATCH",
+                    credentials: "include"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to mark message as read."
+            );
+        }
+
+        await loadMessages();
+
+    } catch (error) {
+
+        alert(
+            error.message ||
+            "Unable to update message."
+        );
+
+    }
+
+}
+
+
+async function deleteMessage(id) {
+
+    if (
+        !confirm(
+            "Delete this message permanently?"
+        )
+    ) {
+        return;
+    }
+
+    try {
+
+        const response =
+            await authFetch(`/api/admin/messages/${id}`,
+                {
+                    method: "DELETE",
+                    credentials: "include"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to delete message."
+            );
+        }
+
+        await loadMessages();
+
+    } catch (error) {
+
+        alert(
+            error.message ||
+            "Unable to delete message."
+        );
+
+    }
+
+}
+
+
+loadMessages();
+
+
+loadVolunteers();
+document
+    .getElementById("galleryUploadForm")
+    .addEventListener("submit", async function (event) {
+
+        event.preventDefault();
+
+        const input =
+            document.getElementById("galleryImage");
+
+        const message =
+            document.getElementById("galleryMessage");
+
+        const file = input.files[0];
+
+        if (!file) {
+            message.textContent =
+                "Please select an image.";
+
+            message.style.color = "red";
+            return;
+        }
+
+        if (!file.type.startsWith("image/")) {
+            message.textContent =
+                "Only image files are allowed.";
+
+            message.style.color = "red";
+            input.value = "";
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            message.textContent =
+                "Image must be 10 MB or smaller.";
+
+            message.style.color = "red";
+            input.value = "";
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("image", file);
+
+        message.textContent =
+            "Uploading image...";
+
+        message.style.color = "#087a42";
+
+        try {
+
+            const response =
+                await authFetch(
+                    "/api/admin/gallery/upload",
+                    {
+                        method: "POST",
+                        credentials: "include",
+                        body: formData
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.message ||
+                    "Unable to upload image."
+                );
+            }
+
+            message.textContent =
+                "✅ Image uploaded successfully.";
+
+            message.style.color = "#087a42";
+
+            input.value = "";
+
+        } catch (error) {
+
+            console.error(
+                "Gallery upload error:",
+                error
+            );
+
+            message.textContent =
+                error.message ||
+                "Unable to upload image.";
+
+            message.style.color = "red";
+        }
+
+    });
+</script>
+
+</body>
+</html>

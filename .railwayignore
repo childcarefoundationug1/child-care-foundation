@@ -1,0 +1,6 @@
+backend/
+api-deploy/
+node_modules/
+.git/
+.env
+*.log
