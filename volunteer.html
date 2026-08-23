@@ -82,6 +82,7 @@
 <p id="message"></p>
 <p id="message"></p>
 <script>
+const API_URL = "https://child-care-foundation-api-production.up.railway.app";
 
 const form = document.getElementById("volunteerForm");
 const message = document.getElementById("message");
@@ -102,7 +103,7 @@ form.addEventListener("submit", async (event) => {
 
     try {
 
-        const response = await fetch("/api/volunteers", {
+        const response = await fetch(`${API_URL}/api/volunteers`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

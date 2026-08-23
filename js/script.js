@@ -1,3 +1,5 @@
+const API_URL = "https://child-care-foundation-api-production.up.railway.app";
+
 const menuToggle = document.getElementById("menuToggle");
 const navigation = document.getElementById("navigation");
 
@@ -97,7 +99,7 @@ mtnDonationForm.addEventListener(
         try {
 
             const response = await fetch(
-                "/api/donate/mtn",
+                `${API_URL}/api/donate/mtn`,
                 {
 
                     method: "POST",
@@ -257,7 +259,7 @@ if (airtelDonationForm) {
             try {
 
                 const response =
-                    await fetch("/api/donate/airtel", {
+                    await fetch(`${API_URL}/api/donate/airtel`, {
                         method: "POST",
 
                         headers: {
