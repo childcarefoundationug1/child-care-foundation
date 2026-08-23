@@ -237,15 +237,6 @@ const validPassword =
         password,
         process.env.ADMIN_PASSWORD_HASH
     );
-  console.log(
-    "LOGIN DEBUG:",
-    {
-        username,
-        envUsername: process.env.ADMIN_USERNAME,
-        validPassword,
-        hashPrefix: process.env.ADMIN_PASSWORD_HASH.slice(0, 7)
-    }
-);
         if (!validPassword) {
 
             return res.status(401).json({
