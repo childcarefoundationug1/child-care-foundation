@@ -186,10 +186,10 @@ async function loadGallery() {
                 <div class="card">
 
                     <img
-                        src="${image.url}"
+                        src="${API_URL}${image.url}"
                         alt="Child Care Foundation Gallery Image"
                         loading="lazy"
-                        onclick="openLightbox('${image.url}')"
+                        onclick="openLightbox(`${API_URL}${image.url}`)"
                     >
 
                     <p>Child Care Foundation</p>
