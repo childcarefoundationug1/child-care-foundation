@@ -24,7 +24,17 @@ const server = http.createServer((req, res) => {
 
   if (urlPath === "/") urlPath = "/index.html";
 
-  const filePath = path.join(__dirname, urlPath);
+  let filePath;
+
+  if (urlPath.startsWith("/assets/")) {
+    filePath = path.join(
+      __dirname,
+      "public",
+      urlPath
+    );
+  } else {
+    filePath = path.join(__dirname, urlPath);
+  }
 
   if (!filePath.startsWith(__dirname)) {
     res.writeHead(403);
