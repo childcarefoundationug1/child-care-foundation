@@ -422,6 +422,24 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
 
         <div id="galleryMessage"></div>
 
+        <hr>
+
+        <h3>Current Gallery Images</h3>
+
+        <div id="galleryLoading">
+            Loading gallery images...
+        </div>
+
+        <div
+            id="galleryGrid"
+            style="
+                display:grid;
+                grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+                gap:20px;
+                margin-top:20px;
+            "
+        ></div>
+
     </div>
 
 </div>
@@ -1059,6 +1077,215 @@ loadMessages();
 
 
 loadVolunteers();
+
+
+async function loadGallery() {
+
+    const grid =
+        document.getElementById("galleryGrid");
+
+    const loading =
+        document.getElementById("galleryLoading");
+
+    if (!grid || !loading) {
+        return;
+    }
+
+    loading.textContent =
+        "Loading gallery images...";
+
+    grid.innerHTML = "";
+
+    try {
+
+        const response =
+            await fetch(`${API_URL}/api/gallery`);
+
+        const data =
+            await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to load gallery."
+            );
+        }
+
+        const images =
+            Array.isArray(data.images)
+                ? data.images
+                : [];
+
+        loading.textContent =
+            images.length
+                ? `${images.length} gallery image(s).`
+                : "No gallery images found.";
+
+        images.forEach(image => {
+
+            const card =
+                document.createElement("div");
+
+            card.style.cssText = `
+                border:1px solid #ddd;
+                border-radius:10px;
+                padding:12px;
+                background:#fff;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);
+            `;
+
+            const img =
+                document.createElement("img");
+
+            img.src =
+                `${API_URL}${image.url}`;
+
+            img.alt =
+                image.filename || "Gallery image";
+
+            img.style.cssText = `
+                width:100%;
+                height:180px;
+                object-fit:cover;
+                border-radius:8px;
+                display:block;
+                margin-bottom:10px;
+            `;
+
+            img.onerror = function () {
+                this.style.display = "none";
+            };
+
+            const filename =
+                document.createElement("div");
+
+            filename.textContent =
+                image.filename || "";
+
+            filename.style.cssText = `
+                font-size:12px;
+                word-break:break-all;
+                color:#555;
+                margin-bottom:10px;
+            `;
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.type = "button";
+            deleteButton.textContent =
+                "🗑️ Delete";
+
+            deleteButton.style.cssText = `
+                width:100%;
+                padding:10px;
+                border:0;
+                border-radius:6px;
+                background:#c62828;
+                color:white;
+                cursor:pointer;
+                font-weight:bold;
+            `;
+
+            deleteButton.addEventListener(
+                "click",
+                () => deleteGalleryImage(
+                    image.filename
+                )
+            );
+
+            card.appendChild(img);
+            card.appendChild(filename);
+            card.appendChild(deleteButton);
+
+            grid.appendChild(card);
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Gallery loading error:",
+            error
+        );
+
+        loading.textContent =
+            error.message ||
+            "Unable to load gallery.";
+
+        loading.style.color = "red";
+    }
+}
+
+
+async function deleteGalleryImage(filename) {
+
+    if (!filename) {
+        return;
+    }
+
+    const confirmed =
+        window.confirm(
+            `Delete this gallery image?\n\n${filename}\n\nThis action cannot be undone.`
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    const message =
+        document.getElementById("galleryMessage");
+
+    message.textContent =
+        "Deleting image...";
+
+    message.style.color = "#087a42";
+
+    try {
+
+        const response =
+            await authFetch(
+                `${API_URL}/api/admin/gallery/${encodeURIComponent(filename)}`,
+                {
+                    method: "DELETE",
+                    credentials: "include"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to delete gallery image."
+            );
+        }
+
+        message.textContent =
+            "✅ Gallery image deleted successfully.";
+
+        message.style.color = "#087a42";
+
+        await loadGallery();
+
+    } catch (error) {
+
+        console.error(
+            "Gallery delete error:",
+            error
+        );
+
+        message.textContent =
+            error.message ||
+            "Unable to delete gallery image.";
+
+        message.style.color = "red";
+    }
+}
+
+
+loadGallery();
+
 document
     .getElementById("galleryUploadForm")
     .addEventListener("submit", async function (event) {
@@ -1136,6 +1363,8 @@ document
             message.style.color = "#087a42";
 
             input.value = "";
+
+            await loadGallery();
 
         } catch (error) {
 
