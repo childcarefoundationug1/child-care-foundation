@@ -4,7 +4,8 @@ const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
-const galleryDir = path.join(__dirname, "..", "uploads", "gallery");
+const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
+const galleryDir = path.join(uploadsDir, "gallery");
 
 if (!fs.existsSync(galleryDir)) {
     fs.mkdirSync(galleryDir, { recursive: true });
