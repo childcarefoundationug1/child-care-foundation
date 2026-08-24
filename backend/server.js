@@ -1146,6 +1146,62 @@ app.post(
     }
 );
 /*
+ADMIN: DELETE GALLERY IMAGE
+*/
+
+app.delete(
+    "/api/admin/gallery/:filename",
+    requireAdmin,
+    (req, res) => {
+
+        try {
+
+            const filename =
+                path.basename(req.params.filename);
+
+            if (!filename || filename !== req.params.filename) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid gallery filename."
+                });
+            }
+
+            const filePath =
+                path.join(galleryDir, filename);
+
+            if (!fs.existsSync(filePath)) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Gallery image not found."
+                });
+            }
+
+            fs.unlinkSync(filePath);
+
+            return res.json({
+                success: true,
+                message: "Gallery image deleted successfully.",
+                filename
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Gallery delete error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to delete gallery image."
+            });
+
+        }
+
+    }
+);
+
+/*
 PUBLIC: GALLERY IMAGES
 */
 
