@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Child Care Foundation - Admin Login</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0b6b3a, #eaf7ef);
+            padding: 20px;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 30px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .logo {
+            text-align: center;
+            font-size: 45px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #075c32;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #0b7a43;
+            box-shadow: 0 0 0 2px rgba(11,122,67,0.12);
+        }
+
+        button {
+            width: 100%;
+            margin-top: 25px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #0b7a43;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #075c32;
+        }
+
+        #message {
+            margin-top: 18px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .back {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #0b7a43;
+            text-decoration: none;
+        }
+    
+.foundation-logo{
+    width:60px;
+    height:60px;
+    object-fit:contain;
+    border-radius:50%;
+    vertical-align:middle;
+    margin-right:10px;
+}
+
+</style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2KZLPFFX6V"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-2KZLPFFX6V');
+</script>
+
+</head>
+
+<body>
+
+<div class="login-box">
+
+    <div class="logo"><img class="foundation-logo"
+src="/assets/child-care-foundation-logo.jpg"
+alt="Child Care Foundation logo"></div>
+
+    <h1>Admin Login</h1>
+
+    <p class="subtitle">
+        Child Care Foundation
+    </p>
+
+    <form id="loginForm">
+
+        <label for="username">Username</label>
+
+        <input
+            type="text"
+            id="username"
+            placeholder="Enter admin username"
+            required
+        >
+
+        <label for="password">Password</label>
+
+        <input
+            type="password"
+            id="password"
+            placeholder="Enter admin password"
+            required
+        >
+
+        <button type="submit">
+            Login
+        </button>
+
+    </form>
+
+    <div id="message"></div>
+
+    <a class="back" href="/">
+        ← Back to website
+    </a>
+
+</div>
+
+<script>
+
+const API_URL = "https://child-care-foundation-api-production.up.railway.app";
+const form = document.getElementById("loginForm");
+const message = document.getElementById("message");
+
+form.addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const username =
+        document.getElementById("username").value.trim();
+
+    const password =
+        document.getElementById("password").value;
+
+    message.textContent = "Logging in...";
+
+    try {
+
+        const response = await fetch(`${API_URL}/api/admin/login`, {
+
+            method: "POST",
+credentials: "include",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                username,
+                password
+            })
+
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.token) {
+
+            sessionStorage.setItem(
+                "ccf_admin_token",
+                data.token
+            );
+
+            message.textContent =
+                "Login successful!";
+
+            message.style.color = "green";
+
+            setTimeout(() => {
+                window.location.href =
+                    "/admin-dashboard.html";
+            }, 800);
+        } else {
+
+            message.textContent =
+                data.message || "Invalid login.";
+
+            message.style.color = "red";
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        message.textContent =
+            "Cannot connect to the server.";
+
+        message.style.color = "red";
+
+    }
+
+});
+
+</script>
+
+</body>
+</html>
