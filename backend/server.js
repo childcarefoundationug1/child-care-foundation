@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
+const nodemailer = require("nodemailer");
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
 const galleryDir = path.join(uploadsDir, "gallery");
 
@@ -36,6 +37,24 @@ const upload = multer({
     }
 });
 const session = require("express-session");
+
+
+const mailer = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+async function sendFoundationEmail(subject, text) {
+    await mailer.sendMail({
+        from: process.env.EMAIL_USER,
+        to: process.env.EMAIL_TO,
+        subject,
+        text
+    });
+}
 
 require("dotenv").config({
     path: __dirname + "/.env",
@@ -721,6 +740,23 @@ app.post("/api/volunteers", (req, res) => {
             reason
         });
 
+        sendFoundationEmail(
+            "New Volunteer Application",
+            `
+New volunteer application received:
+
+Name: ${fullName}
+Phone: ${phone}
+Email: ${email}
+District: ${district}
+Skills: ${skills}
+Availability: ${availability}
+
+Reason:
+${reason}
+`
+        ).catch(err => console.error("Volunteer email error:", err));
+
         return res.json({
             success: true,
             message: "Volunteer application submitted successfully.",
@@ -946,6 +982,20 @@ app.patch("/api/admin/messages/:id/read", requireAdmin, (req, res) => {
             messagesFile,
             JSON.stringify(messages, null, 2)
         );
+
+        sendFoundationEmail(
+            "New Contact Message",
+            `
+New contact message received:
+
+Name: ${name}
+Email: ${email}
+Subject: ${subject}
+
+Message:
+${message}
+`
+        ).catch(err => console.error("Contact email error:", err));
 
         return res.json({
             success: true,
