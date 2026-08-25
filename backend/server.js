@@ -908,6 +908,22 @@ app.post("/api/contact", (req, res) => {
             newMessage.id
         );
 
+        sendFoundationEmail(
+            "New Contact Form Message",
+            `
+New contact message received:
+
+Name: ${name}
+Email: ${email}
+Subject: ${subject}
+
+Message:
+${message}
+`
+        )
+        .then(() => console.log("CONTACT EMAIL SENT SUCCESSFULLY"))
+        .catch(err => console.error("CONTACT EMAIL ERROR:", err));
+
         return res.status(201).json({
             success: true,
             message:
