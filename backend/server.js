@@ -806,6 +806,27 @@ app.get("/api/admin/volunteers", requireAdmin, (req, res) => {
     }
 
 });
+
+app.get("/api/test-email", async (req, res) => {
+    try {
+        await sendFoundationEmail(
+            "Child Care Foundation Email Test",
+            "This is a direct production email test."
+        );
+
+        res.json({
+            success: true,
+            message: "Email sent"
+        });
+    } catch (error) {
+        console.error("TEST EMAIL ERROR:", error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
 app.post("/api/contact", (req, res) => {
 
     try {
