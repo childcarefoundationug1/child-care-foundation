@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
 const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
 const galleryDir = path.join(uploadsDir, "gallery");
 
@@ -39,23 +40,11 @@ const upload = multer({
 const session = require("express-session");
 
 
-const mailer = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    family: 4,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendFoundationEmail(subject, text) {
-    await mailer.sendMail({
-        from: process.env.EMAIL_USER,
+    await resend.emails.send({
+        from: "onboarding@resend.dev",
         to: process.env.EMAIL_TO,
         subject,
         text
