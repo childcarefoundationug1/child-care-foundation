@@ -832,7 +832,7 @@ app.get("/api/test-email", async (req, res) => {
     }
 });
 
-app.post("/api/contact", (req, res) => {
+app.post("/api/contact", async (req, res) => {
 
     try {
 
@@ -908,9 +908,10 @@ app.post("/api/contact", (req, res) => {
             newMessage.id
         );
 
-        sendFoundationEmail(
-            "New Contact Form Message",
-            `
+        try {
+            await sendFoundationEmail(
+                "New Contact Form Message",
+                `
 New contact message received:
 
 Name: ${name}
@@ -920,9 +921,13 @@ Subject: ${subject}
 Message:
 ${message}
 `
-        )
-        .then(() => console.log("CONTACT EMAIL SENT SUCCESSFULLY"))
-        .catch(err => console.error("CONTACT EMAIL ERROR:", err));
+            );
+
+            console.log("CONTACT EMAIL SENT SUCCESSFULLY");
+
+        } catch (emailError) {
+            console.error("CONTACT EMAIL ERROR:", emailError);
+        }
 
         return res.status(201).json({
             success: true,
