@@ -589,26 +589,56 @@ app.post("/api/donate/card", async (req, res) => {
             updated_at: new Date().toISOString()
         });
 
-        const flutterwave = new Flutterwave(
-            process.env.FLW_PUBLIC_KEY,
-            process.env.FLW_SECRET_KEY
+        const flutterwaveResponse = await fetch(
+            "https://api.flutterwave.com/v3/payments",
+            {
+                method: "POST",
+                headers: {
+                    "Authorization":
+                        `Bearer ${process.env.FLW_SECRET_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    tx_ref: reference,
+                    amount: numericAmount,
+                    currency: "UGX",
+                    redirect_url:
+                        "https://child-care-foundation-website-production.up.railway.app/payment-success.html",
+                    customer: {
+                        email: email.trim(),
+                        name: name.trim()
+                    },
+                    customizations: {
+                        title: "Child Care Foundation",
+                        description: "Donation"
+                    },
+                    payment_options: "card"
+                })
+            }
         );
 
-        const result = await flutterwave.PaymentInitiate({
-            tx_ref: reference,
-            amount: numericAmount,
-            currency: "UGX",
-            redirect_url:
-                "https://child-care-foundation-website-production.up.railway.app/payment-success.html",
-            customer: {
-                email: email.trim(),
-                name: name.trim()
-            },
-            customizations: {
-                title: "Child Care Foundation",
-                description: "Donation"
-            }
-        });
+        const result = await flutterwaveResponse.json();
+
+        if (!flutterwaveResponse.ok || result.status !== "success") {
+            console.error(
+                "Flutterwave checkout response:",
+                result
+            );
+
+            updateDonation(reference, {
+                status: "failed",
+                failure_reason:
+                    result.message ||
+                    "Flutterwave checkout request failed."
+            });
+
+            return res.status(502).json({
+                success: false,
+                message:
+                    result.message ||
+                    "Unable to start card payment."
+            });
+        }
 
         res.json({
             success: true,
