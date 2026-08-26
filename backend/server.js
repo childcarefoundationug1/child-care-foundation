@@ -552,8 +552,42 @@ app.post("/api/donate/airtel", (req, res) => {
 
       
 /*
-CREATE CARD DONATION (FLUTTERWAVE)
+CREATE CARD DONATION (PESAPAL)
 */
+
+const PESAPAL_URL =
+    "https://cybqa.pesapal.com/pesapalv3";
+
+async function pesapalToken() {
+    const response = await fetch(
+        `${PESAPAL_URL}/api/Auth/RequestToken`,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                consumer_key:
+                    process.env.PESAPAL_CONSUMER_KEY,
+                consumer_secret:
+                    process.env.PESAPAL_CONSUMER_SECRET
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    if (!data.token) {
+        throw new Error(
+            data.message ||
+            "Pesapal authentication failed"
+        );
+    }
+
+    return data.token;
+}
+
+
 app.post("/api/donate/card", async (req, res) => {
     try {
         const { name, email, amount } = req.body;
@@ -561,16 +595,21 @@ app.post("/api/donate/card", async (req, res) => {
         if (!name || !email || !amount) {
             return res.status(400).json({
                 success: false,
-                message: "Name, email and amount are required."
+                message:
+                    "Name, email and amount are required."
             });
         }
 
         const numericAmount = Number(amount);
 
-        if (!Number.isInteger(numericAmount) || numericAmount < 500) {
+        if (
+            !Number.isInteger(numericAmount) ||
+            numericAmount < 500
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "Donation amount must be at least UGX 500."
+                message:
+                    "Donation amount must be at least UGX 500."
             });
         }
 
@@ -582,75 +621,68 @@ app.post("/api/donate/card", async (req, res) => {
             phone: "",
             email: email.trim(),
             amount: numericAmount,
-            payment_method: "Card Payment",
+            payment_method: "Pesapal",
             status: "pending",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         });
 
-        const flutterwaveResponse = await fetch(
-            "https://api.flutterwave.com/v3/payments",
+        const token = await pesapalToken();
+
+        const result = await fetch(
+            `${PESAPAL_URL}/api/Transactions/SubmitOrderRequest`,
             {
                 method: "POST",
                 headers: {
                     "Authorization":
-                        `Bearer ${process.env.FLW_SECRET_KEY}`,
-                    "Content-Type": "application/json"
+                        `Bearer ${token}`,
+                    "Content-Type":
+                        "application/json"
                 },
                 body: JSON.stringify({
-                    tx_ref: reference,
-                    amount: numericAmount,
+                    id: reference,
                     currency: "UGX",
-                    redirect_url:
+                    amount: numericAmount,
+                    description:
+                        "Child Care Foundation Donation",
+                    callback_url:
                         "https://child-care-foundation-website-production.up.railway.app/payment-success.html",
-                    customer: {
-                        email: email.trim(),
-                        name: name.trim()
-                    },
-                    customizations: {
-                        title: "Child Care Foundation",
-                        description: "Donation"
-                    },
-                    payment_options: "card"
+                    billing_address: {
+                        email_address:
+                            email.trim(),
+                        first_name:
+                            name.trim()
+                    }
                 })
             }
         );
 
-        const result = await flutterwaveResponse.json();
+        const data = await result.json();
 
-        if (!flutterwaveResponse.ok || result.status !== "success") {
-            console.error(
-                "Flutterwave checkout response:",
-                result
+        if (!data.redirect_url) {
+            throw new Error(
+                data.message ||
+                "Pesapal checkout URL missing"
             );
-
-            updateDonation(reference, {
-                status: "failed",
-                failure_reason:
-                    result.message ||
-                    "Flutterwave checkout request failed."
-            });
-
-            return res.status(502).json({
-                success: false,
-                message:
-                    result.message ||
-                    "Unable to start card payment."
-            });
         }
 
         res.json({
             success: true,
             reference,
-            checkout_url: result.data.link
+            checkout_url:
+                data.redirect_url
         });
 
     } catch (error) {
-        console.error("CARD PAYMENT ERROR:", error);
+        console.error(
+            "PESAPAL PAYMENT ERROR:",
+            error
+        );
 
         res.status(500).json({
             success: false,
-            message: "Unable to start card payment."
+            message:
+                "Unable to start payment."
         });
     }
 });
