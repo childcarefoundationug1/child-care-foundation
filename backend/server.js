@@ -6,6 +6,7 @@ const fs = require("fs");
 const multer = require("multer");
 const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
+const Flutterwave = require("flutterwave-node-v3");
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
 const galleryDir = path.join(uploadsDir, "gallery");
 
@@ -550,7 +551,82 @@ app.post("/api/donate/airtel", (req, res) => {
     }
 });
 
-      /*
+      
+/*
+CREATE CARD DONATION (FLUTTERWAVE)
+*/
+app.post("/api/donate/card", async (req, res) => {
+    try {
+        const { name, email, amount } = req.body;
+
+        if (!name || !email || !amount) {
+            return res.status(400).json({
+                success: false,
+                message: "Name, email and amount are required."
+            });
+        }
+
+        const numericAmount = Number(amount);
+
+        if (!Number.isInteger(numericAmount) || numericAmount < 500) {
+            return res.status(400).json({
+                success: false,
+                message: "Donation amount must be at least UGX 500."
+            });
+        }
+
+        const reference = createReference();
+
+        addDonation({
+            reference,
+            donor_name: name.trim(),
+            phone: "",
+            email: email.trim(),
+            amount: numericAmount,
+            payment_method: "Card Payment",
+            status: "pending",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        });
+
+        const flutterwave = new Flutterwave(
+            process.env.FLW_PUBLIC_KEY,
+            process.env.FLW_SECRET_KEY
+        );
+
+        const result = await flutterwave.Payment.initiate({
+            tx_ref: reference,
+            amount: numericAmount,
+            currency: "UGX",
+            redirect_url:
+                "https://child-care-foundation-website-production.up.railway.app/payment-success.html",
+            customer: {
+                email: email.trim(),
+                name: name.trim()
+            },
+            customizations: {
+                title: "Child Care Foundation",
+                description: "Donation"
+            }
+        });
+
+        res.json({
+            success: true,
+            reference,
+            checkout_url: result.data.link
+        });
+
+    } catch (error) {
+        console.error("CARD PAYMENT ERROR:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to start card payment."
+        });
+    }
+});
+
+/*
 DONOR CONFIRMS PAYMENT
 */
 app.post(

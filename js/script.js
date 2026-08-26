@@ -377,6 +377,113 @@ if (airtelDonationForm) {
     );
 
 }
+
+/* =========================================
+   CARD DONATION - FLUTTERWAVE
+========================================= */
+
+const cardDonationForm =
+    document.getElementById("cardDonationForm");
+
+if (cardDonationForm) {
+
+    cardDonationForm.addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+            const button =
+                document.getElementById("cardDonateButton");
+
+            const message =
+                document.getElementById("cardPaymentMessage");
+
+            const name =
+                document.getElementById("cardDonorName").value.trim();
+
+            const email =
+                document.getElementById("cardDonorEmail").value.trim();
+
+            const amount =
+                Number(
+                    document.getElementById("cardDonationAmount").value
+                );
+
+            if (!name || !email || !amount || amount < 500) {
+                message.textContent =
+                    "Please enter your name, email and a donation of at least UGX 500.";
+
+                message.className =
+                    "payment-message error";
+
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = "Opening secure payment...";
+
+            message.textContent = "";
+            message.className = "payment-message";
+
+            try {
+
+                const response = await fetch(
+                    `${API_URL}/api/donate/card`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            name,
+                            email,
+                            amount
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message ||
+                        "Unable to start card payment."
+                    );
+                }
+
+                if (!data.checkout_url) {
+                    throw new Error(
+                        "Payment checkout link was not returned."
+                    );
+                }
+
+                window.location.href =
+                    data.checkout_url;
+
+            } catch (error) {
+
+                console.error(
+                    "Card donation error:",
+                    error
+                );
+
+                message.textContent =
+                    error.message ||
+                    "Unable to connect to the payment server.";
+
+                message.className =
+                    "payment-message error";
+
+                button.disabled = false;
+                button.textContent =
+                    "Donate with Card";
+            }
+        }
+    );
+
+}
+
 /* =========================================
    CHILD CARE FOUNDATION HERO SLIDESHOW
 ========================================= */
