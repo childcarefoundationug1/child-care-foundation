@@ -6,7 +6,6 @@ const fs = require("fs");
 const multer = require("multer");
 const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
-const Flutterwave = require("flutterwave-node-v3");
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
 const galleryDir = path.join(uploadsDir, "gallery");
 
