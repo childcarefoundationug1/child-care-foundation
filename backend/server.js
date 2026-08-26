@@ -594,7 +594,7 @@ app.post("/api/donate/card", async (req, res) => {
             process.env.FLW_SECRET_KEY
         );
 
-        const result = await flutterwave.Payment.initiate({
+        const result = await flutterwave.PaymentInitiate({
             tx_ref: reference,
             amount: numericAmount,
             currency: "UGX",
