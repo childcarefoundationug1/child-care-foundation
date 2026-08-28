@@ -379,7 +379,7 @@ if (airtelDonationForm) {
 }
 
 /* =========================================
-   CARD DONATION - FLUTTERWAVE
+   CARD DONATION - PESAPAL
 ========================================= */
 
 const cardDonationForm =
