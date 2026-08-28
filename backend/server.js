@@ -695,7 +695,7 @@ app.post("/api/donate/card", async (req, res) => {
                     notification_id:
                         notificationId,
                     callback_url:
-                        "https://child-care-foundation-website-production.up.railway.app/payment-success.html",
+                        "https://child-care-foundation-api-production.up.railway.app/api/pesapal/callback",
                     billing_address: {
                         email_address:
                             email.trim(),
@@ -732,6 +732,223 @@ app.post("/api/donate/card", async (req, res) => {
             success: false,
             message:
                 "Unable to start payment."
+        });
+    }
+});
+
+
+/*
+PESAPAL PAYMENT STATUS + CALLBACK + IPN
+*/
+
+async function pesapalTransactionStatus(orderTrackingId) {
+    const token = await pesapalToken();
+
+    const response = await fetch(
+        `${PESAPAL_URL}/api/Transactions/GetTransactionStatus?orderTrackingId=${encodeURIComponent(orderTrackingId)}`,
+        {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            }
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.message ||
+            data.error?.message ||
+            `Pesapal status request failed with HTTP ${response.status}`
+        );
+    }
+
+    return data;
+}
+
+async function processPesapalPayment(
+    orderTrackingId,
+    merchantReference
+) {
+    const donation = findDonation(merchantReference);
+
+    if (!donation) {
+        throw new Error(
+            `Donation ${merchantReference} was not found.`
+        );
+    }
+
+    const result =
+        await pesapalTransactionStatus(
+            orderTrackingId
+        );
+
+    const statusCode = Number(result.status_code);
+
+    let newStatus = "pending";
+
+    if (
+        statusCode === 2 ||
+        String(result.payment_status_description || "").toUpperCase() === "COMPLETED" ||
+        String(result.status || "").toUpperCase() === "COMPLETED"
+    ) {
+        newStatus = "completed";
+    } else if (
+        statusCode === 3 ||
+        String(result.payment_status_description || "").toUpperCase() === "FAILED" ||
+        String(result.status || "").toUpperCase() === "FAILED"
+    ) {
+        newStatus = "failed";
+    }
+
+    const updated = updateDonation(
+        merchantReference,
+        {
+            status: newStatus,
+            pesapal_order_tracking_id: orderTrackingId,
+            pesapal_status_code: result.status_code ?? null,
+            pesapal_payment_status:
+                result.payment_status_description ||
+                result.status ||
+                null,
+            pesapal_payment_method:
+                result.payment_method || null,
+            pesapal_confirmation_code:
+                result.confirmation_code || null,
+            updated_at: new Date().toISOString()
+        }
+    );
+
+    if (!updated) {
+        throw new Error(
+            `Unable to update donation ${merchantReference}.`
+        );
+    }
+
+    console.log(
+        "Pesapal payment status:",
+        {
+            reference: merchantReference,
+            orderTrackingId,
+            status: newStatus,
+            statusCode: result.status_code
+        }
+    );
+
+    return {
+        donation: updated,
+        status: newStatus,
+        pesapal: result
+    };
+}
+
+/*
+PESAPAL CALLBACK
+*/
+
+app.get("/api/pesapal/callback", async (req, res) => {
+    const {
+        OrderTrackingId,
+        OrderMerchantReference
+    } = req.query;
+
+    const website =
+        "https://child-care-foundation-website-production.up.railway.app";
+
+    try {
+        if (!OrderTrackingId || !OrderMerchantReference) {
+            return res.redirect(
+                `${website}/payment-success.html?status=invalid`
+            );
+        }
+
+        const result =
+            await processPesapalPayment(
+                OrderTrackingId,
+                OrderMerchantReference
+            );
+
+        return res.redirect(
+            `${website}/payment-success.html?reference=${encodeURIComponent(OrderMerchantReference)}&status=${encodeURIComponent(result.status)}`
+        );
+
+    } catch (error) {
+        console.error(
+            "PESAPAL CALLBACK ERROR:",
+            error
+        );
+
+        return res.redirect(
+            `${website}/payment-success.html?reference=${encodeURIComponent(OrderMerchantReference || "")}&status=error`
+        );
+    }
+});
+
+/*
+PESAPAL IPN
+*/
+
+app.get("/api/pesapal/ipn", async (req, res) => {
+    const {
+        OrderTrackingId,
+        OrderMerchantReference,
+        OrderNotificationType
+    } = req.query;
+
+    console.log(
+        "Pesapal IPN received:",
+        {
+            OrderTrackingId,
+            OrderMerchantReference,
+            OrderNotificationType
+        }
+    );
+
+    try {
+        if (!OrderTrackingId || !OrderMerchantReference) {
+            return res.status(400).json({
+                orderNotificationType:
+                    OrderNotificationType || "IPNCHANGE",
+                orderTrackingId:
+                    OrderTrackingId || "",
+                orderMerchantReference:
+                    OrderMerchantReference || "",
+                status: 500
+            });
+        }
+
+        await processPesapalPayment(
+            OrderTrackingId,
+            OrderMerchantReference
+        );
+
+        return res.json({
+            orderNotificationType:
+                OrderNotificationType || "IPNCHANGE",
+            orderTrackingId:
+                OrderTrackingId,
+            orderMerchantReference:
+                OrderMerchantReference,
+            status: 200
+        });
+
+    } catch (error) {
+        console.error(
+            "PESAPAL IPN ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+            orderNotificationType:
+                OrderNotificationType || "IPNCHANGE",
+            orderTrackingId:
+                OrderTrackingId || "",
+            orderMerchantReference:
+                OrderMerchantReference || "",
+            status: 500
         });
     }
 });
