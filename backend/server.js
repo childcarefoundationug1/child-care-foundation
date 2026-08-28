@@ -564,6 +564,7 @@ async function pesapalToken() {
         {
             method: "POST",
             headers: {
+                "Accept": "application/json",
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -580,11 +581,56 @@ async function pesapalToken() {
     if (!data.token) {
         throw new Error(
             data.message ||
+            data.error?.message ||
             "Pesapal authentication failed"
         );
     }
 
     return data.token;
+}
+
+async function pesapalIpn(token) {
+    const ipnUrl =
+        `${process.env.RAILWAY_PUBLIC_DOMAIN
+            ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+            : "https://child-care-foundation-api-production.up.railway.app"}/api/pesapal/ipn`;
+
+    if (process.env.PESAPAL_IPN_ID) {
+        return process.env.PESAPAL_IPN_ID;
+    }
+
+    const response = await fetch(
+        `${PESAPAL_URL}/api/URLSetup/RegisterIPN`,
+        {
+            method: "POST",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                url: ipnUrl,
+                ipn_notification_type: "GET"
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    if (!data.ipn_id) {
+        throw new Error(
+            data.message ||
+            data.error?.message ||
+            "Pesapal IPN registration failed"
+        );
+    }
+
+    console.log(
+        "Pesapal IPN registered:",
+        data.ipn_id
+    );
+
+    return data.ipn_id;
 }
 
 
@@ -628,6 +674,7 @@ app.post("/api/donate/card", async (req, res) => {
         });
 
         const token = await pesapalToken();
+        const notificationId = await pesapalIpn(token);
 
         const result = await fetch(
             `${PESAPAL_URL}/api/Transactions/SubmitOrderRequest`,
@@ -645,6 +692,8 @@ app.post("/api/donate/card", async (req, res) => {
                     amount: numericAmount,
                     description:
                         "Child Care Foundation Donation",
+                    notification_id:
+                        notificationId,
                     callback_url:
                         "https://child-care-foundation-website-production.up.railway.app/payment-success.html",
                     billing_address: {
