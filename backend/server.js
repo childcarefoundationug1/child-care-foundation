@@ -791,15 +791,21 @@ async function processPesapalPayment(
     let newStatus = "pending";
 
     if (
-        statusCode === 2 ||
+        statusCode === 1 ||
         String(result.payment_status_description || "").toUpperCase() === "COMPLETED" ||
         String(result.status || "").toUpperCase() === "COMPLETED"
     ) {
         newStatus = "completed";
     } else if (
-        statusCode === 3 ||
+        statusCode === 2 ||
         String(result.payment_status_description || "").toUpperCase() === "FAILED" ||
         String(result.status || "").toUpperCase() === "FAILED"
+    ) {
+        newStatus = "failed";
+    } else if (
+        statusCode === 3 ||
+        String(result.payment_status_description || "").toUpperCase() === "REVERSED" ||
+        String(result.status || "").toUpperCase() === "REVERSED"
     ) {
         newStatus = "failed";
     }
