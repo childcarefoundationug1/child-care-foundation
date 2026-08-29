@@ -98,6 +98,7 @@ const corsOptions = {
             return callback(null, true);
         }
 
+        console.error("CORS origin not allowed:", origin);
         return callback(new Error("CORS origin not allowed."));
     },
     credentials: true,
