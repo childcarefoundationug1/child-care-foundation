@@ -98,13 +98,8 @@ const corsOptions = {
             return callback(null, true);
         }
 
-        console.error(
-            "=== CORS REJECTED ===",
-            JSON.stringify({
-                origin: origin,
-                allowedOrigins: FRONTEND_ORIGINS
-            })
-        );
+        console.error("CORS_REJECTED_ORIGIN:", origin);
+        console.error("CORS_ALLOWED_ORIGINS:", FRONTEND_ORIGINS.join(","));
         return callback(new Error("CORS origin not allowed."));
     },
     credentials: true,
