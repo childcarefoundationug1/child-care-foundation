@@ -52,8 +52,7 @@ async function sendFoundationEmail(subject, text) {
 }
 
 require("dotenv").config({
-    path: __dirname + "/.env",
-    override: true
+    path: __dirname + "/.env"
 });
 
 const AfricasTalking = require("africastalking");
