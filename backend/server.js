@@ -558,6 +558,7 @@ CREATE CARD DONATION (PESAPAL)
 */
 
 const PESAPAL_URL =
+    process.env.PESAPAL_URL ||
     "https://cybqa.pesapal.com/pesapalv3";
 
 async function pesapalToken() {
