@@ -1,4 +1,5 @@
 const express = require("express");
+const PESAPAL_URL = process.env.PESAPAL_URL || "https://pay.pesapal.com/v3";
 const cors = require("cors");
 const crypto = require("crypto");
 const path = require("path");
