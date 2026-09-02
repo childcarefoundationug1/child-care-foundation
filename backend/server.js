@@ -432,7 +432,7 @@ async function createPesapalMobileDonation(req, res, paymentMethod) {
 
             return res.status(502).json({
                 success: false,
-                message: data.message || "Unable to start mobile-money payment."
+                message: data.error?.message || data.message || "Unable to start mobile-money payment.", pesapal_error: data.error?.code || null
             });
         }
 
