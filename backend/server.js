@@ -354,143 +354,10 @@ function normalizeUgandaPhone(phone) {
 
 }
 
-/*
-CREATE DONATION
-*/
-
-app.post("/api/donate/mtn", (req, res) => {
-
-    try {
-
-        const {
-            name,
-            phone,
-            amount
-        } = req.body;
-
-        if (!name || !phone || !amount) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    "Name, phone number and amount are required."
-
-            });
-
-        }
-
-        const numericAmount =
-            Number(amount);
-
-        if (
-            !Number.isInteger(numericAmount) ||
-            numericAmount < 500
-        ) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
-                    "Donation amount must be at least UGX 500."
-
-            });
-
-        }
-
-        const reference =
-            createReference();
-
-        const donation = {
-
-            reference,
-
-            donor_name:
-                name.trim(),
-
-            phone:
-                normalizeUgandaPhone(phone),
-
-            amount:
-                numericAmount,
-
-            payment_method:
-                "MTN Mobile Money",
-
-            status:
-                "pending",
-
-            created_at:
-                new Date().toISOString(),
-
-            updated_at:
-                new Date().toISOString()
-
-        };
-
-        addDonation(donation);
-        console.log(
-            `Donation created: ${reference}`
-        );
-
-        return res.json({
-
-            success: true,
-
-            reference,
-
-            status: "pending",
-
-            payment_method:
-                "MTN Mobile Money",
-
-            payment_number:
-                "+256793449784",
-
-            amount:
-                numericAmount,
-
-            instructions: [
-
-                "Send the money to the MTN Mobile Money number above.",
-
-                "Complete the payment using your Mobile Money PIN on your phone.",
-
-                "Return to the website and tap 'I've Paid'.",
-
-                "The foundation will verify your payment."
-
-            ],
-
-            message:
-                "Thank you for supporting Child Care Foundation."
-
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        return res.status(500).json({
-
-            success: false,
-
-
-            message:
-                "Unable to create donation."
-
-        });
-
-    }
-
-});
-
 /* 
-CREATE AIRTEL DONATION
+CREATE MOBILE MONEY DONATION
 */
-app.post("/api/donate/airtel", (req, res) => {
+async function createPesapalMobileDonation(req, res, paymentMethod) {
     try {
         const { name, phone, amount } = req.body;
 
@@ -510,56 +377,101 @@ app.post("/api/donate/airtel", (req, res) => {
             });
         }
 
+        const normalizedPhone = normalizeUgandaPhone(phone);
         const reference = createReference();
 
-        const donation = {
+        addDonation({
             reference,
             donor_name: name.trim(),
-            phone: normalizeUgandaPhone(phone),
+            phone: normalizedPhone,
+            email: "",
             amount: numericAmount,
-            payment_method: "Airtel Money",
+            payment_method: paymentMethod,
             status: "pending",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-        };
+        });
 
-        addDonation(donation);
+        const token = await pesapalToken();
+        const notificationId = await pesapalIpn(token);
+
+        const result = await fetch(
+            `${PESAPAL_URL}/api/Transactions/SubmitOrderRequest`,
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    id: reference,
+                    currency: "UGX",
+                    amount: numericAmount,
+                    description: `Child Care Foundation ${paymentMethod} Donation`,
+                    notification_id: notificationId,
+                    callback_url:
+                        "https://child-care-foundation-api-production.up.railway.app/api/pesapal/callback",
+                    billing_address: {
+                        first_name: name.trim(),
+                        phone_number: normalizedPhone
+                    }
+                })
+            }
+        );
+
+        const data = await result.json();
+
+        if (!result.ok || !data.redirect_url) {
+            console.error("Pesapal mobile checkout response:", data);
+
+            updateDonation(reference, {
+                status: "failed",
+                failure_reason:
+                    data.message || "Unable to create Pesapal checkout."
+            });
+
+            return res.status(502).json({
+                success: false,
+                message: data.message || "Unable to start mobile-money payment."
+            });
+        }
+
+        updateDonation(reference, {
+            pesapal_order_tracking_id:
+                data.order_tracking_id || null,
+            pesapal_status_code:
+                data.status_code ?? null,
+            pesapal_payment_status:
+                "PENDING"
+        });
 
         return res.json({
             success: true,
             reference,
             status: "pending",
-            payment_method: "Airtel Money",
-            payment_number: "+256730463790",
-            account_name: "Given Okongo",
+            payment_method: paymentMethod,
             amount: numericAmount,
-            instructions: [
-                "Send the money to the Airtel Money number above.",
-                "Complete the payment using your Airtel Money PIN.",
-                "Return to the website and tap 'I've Paid'.",
-                "The foundation will verify your payment."
-            ],
-            message: "Thank you for supporting Child Care Foundation."
+            checkout_url: data.redirect_url,
+            message: "Continue to Pesapal to complete your mobile-money payment."
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("PESAPAL MOBILE PAYMENT ERROR:", error);
 
         return res.status(500).json({
             success: false,
-            message: "Unable to create Airtel donation."
+            message: "Unable to start mobile-money payment."
         });
     }
-});
+}
 
-      
-/*
-CREATE CARD DONATION (PESAPAL)
-*/
+app.post("/api/donate/mtn", (req, res) =>
+    createPesapalMobileDonation(req, res, "MTN Mobile Money")
+);
 
-const PESAPAL_URL =
-    process.env.PESAPAL_URL ||
-    "https://cybqa.pesapal.com/pesapalv3";
+app.post("/api/donate/airtel", (req, res) =>
+    createPesapalMobileDonation(req, res, "Airtel Money")
+);
 
 async function pesapalToken() {
     const response = await fetch(
