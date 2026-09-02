@@ -460,7 +460,7 @@ async function createPesapalMobileDonation(req, res, paymentMethod) {
 
         return res.status(500).json({
             success: false,
-            message: "Unable to start mobile-money payment."
+            message: error.message || "Unable to start mobile-money payment."
         });
     }
 }
