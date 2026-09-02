@@ -815,8 +815,11 @@ async function processPesapalPayment(
     ) {
         newStatus = "failed";
     } else if (
+        statusCode === 0 ||
         statusCode === 3 ||
+        String(result.payment_status_description || "").toUpperCase() === "INVALID" ||
         String(result.payment_status_description || "").toUpperCase() === "REVERSED" ||
+        String(result.status || "").toUpperCase() === "INVALID" ||
         String(result.status || "").toUpperCase() === "REVERSED"
     ) {
         newStatus = "failed";
