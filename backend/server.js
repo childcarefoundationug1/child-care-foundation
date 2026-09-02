@@ -718,6 +718,15 @@ app.post("/api/donate/card", async (req, res) => {
             );
         }
 
+        updateDonation(reference, {
+            pesapal_order_tracking_id:
+                data.order_tracking_id || null,
+            pesapal_status_code:
+                data.status_code ?? null,
+            pesapal_payment_status:
+                "PENDING"
+        });
+
         res.json({
             success: true,
             reference,
