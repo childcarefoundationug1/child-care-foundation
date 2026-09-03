@@ -247,6 +247,7 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
                     <th>Phone</th>
                     <th>Amount</th>
                     <th>Method</th>
+                    <th>Transaction ID</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -254,7 +255,7 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
 
             <tbody id="donationsTable">
                 <tr>
-                    <td colspan="7">
+                    <td colspan="8">
                         Loading donations...
                     </td>
                 </tr>
@@ -496,7 +497,7 @@ async function loadDonations() {
 
     table.innerHTML = `
         <tr>
-            <td colspan="7">
+            <td colspan="8">
                 Loading donations...
             </td>
         </tr>
@@ -543,7 +544,7 @@ async function loadDonations() {
 
             table.innerHTML = `
                 <tr>
-                    <td colspan="7">
+                    <td colspan="8">
                         No donations found.
                     </td>
                 </tr>
@@ -596,6 +597,12 @@ async function loadDonations() {
                         </td>
 
                         <td>
+                            ${escapeHtml(
+                                donation.transaction_id || "—"
+                            )}
+                        </td>
+
+                        <td>
                             <span class="status ${status}">
                                 ${escapeHtml(status)}
                             </span>
@@ -634,7 +641,7 @@ async function loadDonations() {
 
         table.innerHTML = `
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     Unable to load donations.
                 </td>
             </tr>
@@ -716,7 +723,7 @@ async function loadVolunteers() {
 
     table.innerHTML = `
         <tr>
-            <td colspan="7">
+            <td colspan="8">
                 Loading volunteers...
             </td>
         </tr>
@@ -755,7 +762,7 @@ async function loadVolunteers() {
 
             table.innerHTML = `
                 <tr>
-                    <td colspan="7">
+                    <td colspan="8">
                         No volunteer applications yet.
                     </td>
                 </tr>
@@ -800,7 +807,7 @@ async function loadVolunteers() {
 
         table.innerHTML = `
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     Unable to load volunteers.
                 </td>
             </tr>
@@ -892,7 +899,7 @@ async function loadMessages() {
 
             table.innerHTML = `
                 <tr>
-                    <td colspan="7">
+                    <td colspan="8">
                         No contact messages yet.
                     </td>
                 </tr>
@@ -979,7 +986,7 @@ async function loadMessages() {
 
         table.innerHTML = `
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     Unable to load messages.
                 </td>
             </tr>

@@ -57,3 +57,8 @@ _local-archive/
 
 # Root-level local deployment packages
 *.zip
+
+# Local runtime and backup files
+core
+_final-backup-manual-payments-20260903/
+uploads/donations.json

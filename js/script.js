@@ -36,63 +36,312 @@ navigation.querySelectorAll("a").forEach(link => {
 }
 
 /* =========================================
-MTN DONATION
+   MTN + AIRTEL MANUAL MOBILE MONEY
+========================================= */
+
+async function submitManualMobileDonation({
+    form,
+    name,
+    phone,
+    amount,
+    button,
+    message,
+    endpoint,
+    paymentMethod,
+    paidButtonId,
+    paidMessageId
+}) {
+    if (!name || !phone || !amount) {
+        message.textContent = "Please complete all fields.";
+        message.className = "payment-message error";
+        return;
+    }
+
+    const numericAmount = Number(amount);
+
+    if (!Number.isInteger(numericAmount) || numericAmount < 500) {
+        message.textContent =
+            "Please enter a donation amount of at least UGX 500.";
+        message.className = "payment-message error";
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Creating donation...";
+
+    message.textContent = "";
+    message.className = "payment-message";
+
+    try {
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name,
+                phone,
+                amount: numericAmount
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to create donation."
+            );
+        }
+
+        message.innerHTML = `
+            <div class="payment-card">
+
+                <h3>❤️ Donation Created Successfully</h3>
+
+                <p>
+                    <strong>Reference:</strong>
+                    ${escapeHtml(data.reference)}
+                </p>
+
+                <p>
+                    <strong>Amount:</strong>
+                    UGX ${Number(data.amount).toLocaleString()}
+                </p>
+
+                <p>
+                    <strong>Payment Method:</strong>
+                    ${escapeHtml(data.payment_method)}
+                </p>
+
+                <p>
+                    <strong>Pay To:</strong>
+                    ${escapeHtml(data.payment_number)}
+                </p>
+
+                <p>
+                    <strong>Account Name:</strong>
+                    ${escapeHtml(data.account_name)}
+                </p>
+
+                <hr>
+
+                <p>
+                    <strong>How to complete your donation</strong>
+                </p>
+
+                <ol>
+                    ${data.instructions
+                        .map(step => `<li>${escapeHtml(step)}</li>`)
+                        .join("")}
+                </ol>
+
+                <hr>
+
+                <p>
+                    <strong>Mobile Money Transaction ID</strong>
+                </p>
+
+                <p>
+                    Enter the transaction ID from the SMS you received
+                    after making the payment.
+                </p>
+
+                <input
+                    type="text"
+                    id="${paidButtonId}TransactionId"
+                    placeholder="Enter transaction ID"
+                    maxlength="100"
+                    autocomplete="off"
+                    style="width:100%;padding:12px;margin:8px 0;"
+                >
+
+                <button
+                    id="${paidButtonId}"
+                    class="btn btn-primary"
+                    type="button">
+                    I Have Paid — Submit Transaction ID
+                </button>
+
+                <p id="${paidMessageId}"></p>
+
+            </div>
+        `;
+
+        const paidButton =
+            document.getElementById(paidButtonId);
+
+        const paidMessage =
+            document.getElementById(paidMessageId);
+
+        const transactionInput =
+            document.getElementById(
+                `${paidButtonId}TransactionId`
+            );
+
+        paidButton.addEventListener("click", async () => {
+
+            const transactionId =
+                transactionInput.value.trim();
+
+            if (!transactionId) {
+                paidMessage.textContent =
+                    "Please enter your Mobile Money transaction ID.";
+                paidMessage.style.color = "red";
+                return;
+            }
+
+            paidButton.disabled = true;
+            paidButton.textContent =
+                "Submitting...";
+
+            paidMessage.textContent = "";
+            paidMessage.style.color = "";
+
+            try {
+                const submitResponse =
+                    await fetch(
+                        `${API_URL}/api/donations/${encodeURIComponent(data.reference)}/submit-payment`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                transaction_id: transactionId
+                            })
+                        }
+                    );
+
+                const submitData =
+                    await submitResponse.json();
+
+                if (
+                    !submitResponse.ok ||
+                    !submitData.success
+                ) {
+                    throw new Error(
+                        submitData.message ||
+                        "Unable to submit transaction ID."
+                    );
+                }
+
+                paidMessage.innerHTML =
+                    "✅ Payment details submitted successfully.<br>" +
+                    "Your donation is now <strong>awaiting verification</strong>.<br>" +
+                    "Reference: <strong>" +
+                    escapeHtml(submitData.reference) +
+                    "</strong>";
+
+                paidMessage.style.color = "#087a42";
+
+                transactionInput.disabled = true;
+                paidButton.disabled = true;
+                paidButton.textContent =
+                    "Submitted — Awaiting Verification";
+
+                form.reset();
+
+            } catch (error) {
+
+                console.error(
+                    "Transaction ID submission error:",
+                    error
+                );
+
+                paidMessage.textContent =
+                    error.message ||
+                    "Unable to submit transaction ID.";
+
+                paidMessage.style.color = "red";
+
+                paidButton.disabled = false;
+                paidButton.textContent =
+                    "I Have Paid — Submit Transaction ID";
+            }
+        });
+
+    } catch (error) {
+
+        console.error(
+            `${paymentMethod} donation error:`,
+            error
+        );
+
+        message.textContent =
+            error.message ||
+            "Unable to connect to the donation server.";
+
+        message.className =
+            "payment-message error";
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent =
+            paymentMethod === "MTN Mobile Money"
+                ? "Donate with MTN"
+                : "Donate with Airtel";
+    }
+}
+
+
+/* =========================================
+   MTN DONATION
 ========================================= */
 
 const mtnDonationForm =
-document.getElementById("mtnDonationForm");
+    document.getElementById("mtnDonationForm");
 
 if (mtnDonationForm) {
 
-mtnDonationForm.addEventListener(
-    "submit",
-    async function (event) {
-        event.preventDefault();
+    mtnDonationForm.addEventListener(
+        "submit",
+        async function (event) {
 
-        const name = document.getElementById("donorName").value.trim();
-        const phone = document.getElementById("donorPhone").value.trim();
-        const amount = document.getElementById("donationAmount").value;
-        const button = document.getElementById("mtnDonateButton");
-        const message = document.getElementById("mtnPaymentMessage");
+            event.preventDefault();
 
-        if (!name || !phone || !amount) {
-            message.textContent = "Please complete all fields.";
-            message.className = "payment-message error";
-            return;
-        }
+            await submitManualMobileDonation({
+                form: mtnDonationForm,
 
-        button.disabled = true;
-        button.textContent = "Processing...";
+                name:
+                    document
+                        .getElementById("donorName")
+                        .value
+                        .trim(),
 
-        try {
-            const response = await fetch(`${API_URL}/api/donate/mtn`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    name,
-                    phone,
-                    amount: Number(amount)
-                })
+                phone:
+                    document
+                        .getElementById("donorPhone")
+                        .value
+                        .trim(),
+
+                amount:
+                    document
+                        .getElementById("donationAmount")
+                        .value,
+
+                button:
+                    document
+                        .getElementById("mtnDonateButton"),
+
+                message:
+                    document
+                        .getElementById("mtnPaymentMessage"),
+
+                endpoint:
+                    "/api/donate/mtn",
+
+                paymentMethod:
+                    "MTN Mobile Money",
+
+                paidButtonId:
+                    "mtnPaidButton",
+
+                paidMessageId:
+                    "mtnPaidMessage"
             });
-
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                throw new Error(data.message || "Donation request failed.");
-            }
-
-            window.location.href = data.checkout_url;
-        } catch (error) {
-            console.error(error);
-            message.textContent = "Unable to start payment. Please try again.";
-            message.className = "payment-message error";
-            button.disabled = false;
-            button.textContent = "Donate with MTN";
         }
-    }
-);
+    );
 }
 
 
@@ -111,166 +360,50 @@ if (airtelDonationForm) {
 
             event.preventDefault();
 
-            const name =
-                document
-                    .getElementById("airtelDonorName")
-                    .value
-                    .trim();
+            await submitManualMobileDonation({
+                form: airtelDonationForm,
 
-            const phone =
-                document
-                    .getElementById("airtelDonorPhone")
-                    .value
-                    .trim();
+                name:
+                    document
+                        .getElementById("airtelDonorName")
+                        .value
+                        .trim(),
 
-            const amount =
-                document
-                    .getElementById("airtelDonationAmount")
-                    .value;
+                phone:
+                    document
+                        .getElementById("airtelDonorPhone")
+                        .value
+                        .trim(),
 
-            const button =
-                document.getElementById("airtelDonateButton");
+                amount:
+                    document
+                        .getElementById("airtelDonationAmount")
+                        .value,
 
-            const message =
-                document.getElementById("airtelPaymentMessage");
+                button:
+                    document
+                        .getElementById("airtelDonateButton"),
 
-            if (!name || !phone || !amount) {
-                message.textContent =
-                    "Please complete all fields.";
+                message:
+                    document
+                        .getElementById("airtelPaymentMessage"),
 
-                message.className =
-                    "payment-message error";
+                endpoint:
+                    "/api/donate/airtel",
 
-                return;
-            }
+                paymentMethod:
+                    "Airtel Money",
 
-            button.disabled = true;
-            button.textContent = "Processing...";
+                paidButtonId:
+                    "airtelPaidButton",
 
-            message.textContent = "";
-            message.className = "payment-message";
-
-            try {
-
-                const response =
-                    await fetch(`${API_URL}/api/donate/airtel`, {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            name: name,
-                            phone: phone,
-                            amount: Number(amount)
-                        })
-                    });
-
-                const data =
-                    await response.json();
-
-                if (!response.ok || !data.success) {
-                    throw new Error(
-                        data.message ||
-                        "Donation request failed."
-                    );
-                }
-
-                message.innerHTML = `
-                    <div class="payment-card">
-
-                        <h3>
-                            ❤️ Donation Created Successfully
-                        </h3>
-
-                        <p>
-                            <strong>Reference:</strong>
-                            ${data.reference}
-                        </p>
-
-                        <p>
-                            <strong>Amount:</strong>
-                            UGX ${data.amount}
-                        </p>
-
-                        <p>
-                            <strong>Payment Method:</strong>
-                            ${data.payment_method}
-                        </p>
-
-                        <p>
-                            <strong>Pay To:</strong>
-                            ${data.payment_number}
-                        </p>
-
-                        <p>
-                            <strong>Account Name:</strong>
-                            ${data.account_name}
-                        </p>
-
-                        <hr>
-
-                        <p>
-                            <strong>Instructions</strong>
-                        </p>
-
-                        <ol>
-                            ${data.instructions
-                                .map(step => `<li>${step}</li>`)
-                                .join("")}
-                        </ol>
-
-                        <button
-                            id="airtelPaidButton"
-                            class="btn btn-primary">
-                            I've Paid
-                        </button>
-
-                        <p id="airtelPaidMessage"></p>
-
-                    </div>
-                `;
-
-                document
-                    .getElementById("airtelPaidButton")
-                    .addEventListener("click", () => {
-
-                        document
-                            .getElementById("airtelPaidMessage")
-                            .innerHTML =
-                            "✅ Thank you! Your donation has been marked as awaiting verification.";
-
-                    });
-
-                airtelDonationForm.reset();
-
-            } catch (error) {
-
-                console.error(
-                    "Airtel donation error:",
-                    error
-                );
-
-                message.textContent =
-                    error.message ||
-                    "Unable to connect to the donation server.";
-
-                message.className =
-                    "payment-message error";
-
-            } finally {
-
-                button.disabled = false;
-                button.textContent =
-                    "Donate with Airtel";
-
-            }
+                paidMessageId:
+                    "airtelPaidMessage"
+            });
         }
     );
-
 }
+
 
 /* =========================================
    CARD DONATION - PESAPAL

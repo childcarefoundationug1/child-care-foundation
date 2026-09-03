@@ -1,4 +1,5 @@
 const express = require("express");
+require("dotenv").config();
 const PESAPAL_URL = process.env.PESAPAL_URL || "https://pay.pesapal.com/v3";
 const cors = require("cors");
 const crypto = require("crypto");
@@ -358,7 +359,7 @@ function normalizeUgandaPhone(phone) {
 /* 
 CREATE MOBILE MONEY DONATION
 */
-async function createPesapalMobileDonation(req, res, paymentMethod) {
+function createManualMobileDonation(req, res, paymentMethod) {
     try {
         const { name, phone, amount } = req.body;
 
@@ -381,6 +382,28 @@ async function createPesapalMobileDonation(req, res, paymentMethod) {
         const normalizedPhone = normalizeUgandaPhone(phone);
         const reference = createReference();
 
+        const paymentNumber =
+            paymentMethod === "MTN Mobile Money"
+                ? "+256 793 449 784"
+                : "+256 730 463 790";
+
+        const accountName = "Given okongo";
+
+        const instructions =
+            paymentMethod === "MTN Mobile Money"
+                ? [
+                    `Send UGX ${numericAmount.toLocaleString()} to MTN Mobile Money number ${paymentNumber}.`,
+                    `Account name: ${accountName}.`,
+                    "After completing the payment, enter the Mobile Money transaction ID below.",
+                    "Your donation will remain awaiting verification until the Child Care Foundation administrator confirms receipt."
+                ]
+                : [
+                    `Send UGX ${numericAmount.toLocaleString()} to Airtel Money number ${paymentNumber}.`,
+                    `Account name: ${accountName}.`,
+                    "After completing the payment, enter the Mobile Money transaction ID below.",
+                    "Your donation will remain awaiting verification until the Child Care Foundation administrator confirms receipt."
+                ];
+
         addDonation({
             reference,
             donor_name: name.trim(),
@@ -388,62 +411,12 @@ async function createPesapalMobileDonation(req, res, paymentMethod) {
             email: "",
             amount: numericAmount,
             payment_method: paymentMethod,
+            payment_number: paymentNumber,
+            account_name: accountName,
+            transaction_id: "",
             status: "pending",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-        });
-
-        const token = await pesapalToken();
-        const notificationId = await pesapalIpn(token);
-
-        const result = await fetch(
-            `${PESAPAL_URL}/api/Transactions/SubmitOrderRequest`,
-            {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    id: reference,
-                    currency: "UGX",
-                    amount: numericAmount,
-                    description: `Child Care Foundation ${paymentMethod} Donation`,
-                    notification_id: notificationId,
-                    callback_url:
-                        "https://child-care-foundation-api-production.up.railway.app/api/pesapal/callback",
-                    billing_address: {
-                        first_name: name.trim(),
-                        phone_number: normalizedPhone
-                    }
-                })
-            }
-        );
-
-        const data = await result.json();
-
-        if (!result.ok || !data.redirect_url) {
-            console.error("Pesapal mobile checkout response:", data);
-
-            updateDonation(reference, {
-                status: "failed",
-                failure_reason:
-                    data.message || "Unable to create Pesapal checkout."
-            });
-
-            return res.status(502).json({
-                success: false,
-                message: data.error?.message || data.message || "Unable to start mobile-money payment.", pesapal_error: data.error?.code || null
-            });
-        }
-
-        updateDonation(reference, {
-            pesapal_order_tracking_id:
-                data.order_tracking_id || null,
-            pesapal_status_code:
-                data.status_code ?? null,
-            pesapal_payment_status:
-                "PENDING"
         });
 
         return res.json({
@@ -452,103 +425,107 @@ async function createPesapalMobileDonation(req, res, paymentMethod) {
             status: "pending",
             payment_method: paymentMethod,
             amount: numericAmount,
-            checkout_url: data.redirect_url,
-            message: "Continue to Pesapal to complete your mobile-money payment."
+            payment_number: paymentNumber,
+            account_name: accountName,
+            instructions,
+            message: "Donation created. Complete the Mobile Money payment, then submit your transaction ID."
         });
 
     } catch (error) {
-        console.error("PESAPAL MOBILE PAYMENT ERROR:", error);
+        console.error("MANUAL MOBILE PAYMENT ERROR:", error);
 
         return res.status(500).json({
             success: false,
-            message: error.message || "Unable to start mobile-money payment."
+            message: error.message || "Unable to create mobile-money donation."
         });
     }
 }
 
 app.post("/api/donate/mtn", (req, res) =>
-    createPesapalMobileDonation(req, res, "MTN Mobile Money")
+    createManualMobileDonation(req, res, "MTN Mobile Money")
 );
 
 app.post("/api/donate/airtel", (req, res) =>
-    createPesapalMobileDonation(req, res, "Airtel Money")
+    createManualMobileDonation(req, res, "Airtel Money")
 );
 
-async function pesapalToken() {
-    const response = await fetch(
-        `${PESAPAL_URL}/api/Auth/RequestToken`,
-        {
-            method: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                consumer_key:
-                    process.env.PESAPAL_CONSUMER_KEY,
-                consumer_secret:
-                    process.env.PESAPAL_CONSUMER_SECRET
-            })
+/*
+SUBMIT MOBILE MONEY TRANSACTION ID
+This does NOT verify the payment.
+It only moves the donation to awaiting_verification.
+*/
+
+app.post("/api/donations/:reference/submit-payment", (req, res) => {
+    try {
+        const transactionId =
+            String(req.body.transaction_id || "").trim();
+
+        if (!transactionId) {
+            return res.status(400).json({
+                success: false,
+                message: "Mobile Money transaction ID is required."
+            });
         }
-    );
 
-    const data = await response.json();
-
-    if (!data.token) {
-        throw new Error(
-            data.message ||
-            data.error?.message ||
-            "Pesapal authentication failed"
-        );
-    }
-
-    return data.token;
-}
-
-async function pesapalIpn(token) {
-    const ipnUrl =
-        `${process.env.RAILWAY_PUBLIC_DOMAIN
-            ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-            : "https://child-care-foundation-api-production.up.railway.app"}/api/pesapal/ipn`;
-
-    if (process.env.PESAPAL_IPN_ID) {
-        return process.env.PESAPAL_IPN_ID;
-    }
-
-    const response = await fetch(
-        `${PESAPAL_URL}/api/URLSetup/RegisterIPN`,
-        {
-            method: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                url: ipnUrl,
-                ipn_notification_type: "GET"
-            })
+        if (transactionId.length < 3 || transactionId.length > 100) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid Mobile Money transaction ID."
+            });
         }
-    );
 
-    const data = await response.json();
+        const donation = findDonation(req.params.reference);
 
-    if (!data.ipn_id) {
-        throw new Error(
-            data.message ||
-            data.error?.message ||
-            "Pesapal IPN registration failed"
+        if (!donation) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation reference not found."
+            });
+        }
+
+        if (donation.status === "completed") {
+            return res.status(400).json({
+                success: false,
+                message: "This donation has already been verified."
+            });
+        }
+
+        if (
+            donation.payment_method !== "MTN Mobile Money" &&
+            donation.payment_method !== "Airtel Money"
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Transaction ID submission is only available for MTN and Airtel Mobile Money."
+            });
+        }
+
+        const updatedDonation = updateDonation(
+            req.params.reference,
+            {
+                transaction_id: transactionId,
+                status: "awaiting_verification",
+                payment_submitted_at: new Date().toISOString()
+            }
         );
+
+        return res.json({
+            success: true,
+            reference: updatedDonation.reference,
+            status: updatedDonation.status,
+            transaction_id: updatedDonation.transaction_id,
+            message: "Payment details submitted successfully. Your donation is now awaiting verification."
+        });
+
+    } catch (error) {
+        console.error("TRANSACTION ID SUBMISSION ERROR:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Unable to submit transaction ID."
+        });
     }
-
-    console.log(
-        "Pesapal IPN registered:",
-        data.ipn_id
-    );
-
-    return data.ipn_id;
-}
-
+});
 
 app.post("/api/donate/card", async (req, res) => {
     try {
