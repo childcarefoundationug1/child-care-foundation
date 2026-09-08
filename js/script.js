@@ -168,8 +168,6 @@ async function submitManualMobileDonation({
                 </p>
 
                 <input
-
-                <input
                     type="text"
                     id="${paidButtonId}TransactionId"
                     placeholder="Enter transaction ID"
