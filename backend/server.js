@@ -392,15 +392,31 @@ function createManualMobileDonation(req, res, paymentMethod) {
         const instructions =
             paymentMethod === "MTN Mobile Money"
                 ? [
-                    `Send UGX ${numericAmount.toLocaleString()} to MTN Mobile Money number ${paymentNumber}.`,
-                    `Account name: ${accountName}.`,
-                    "After completing the payment, enter the Mobile Money transaction ID below.",
+                    `Give an amount you can afford to pay. Your selected donation amount is UGX ${numericAmount.toLocaleString()}.`,
+                    "MTN Mobile Money — complete the payment from your phone:",
+                    "1. Dial *165#.",
+                    "2. Select Send Money.",
+                    "3. Select Mobile User.",
+                    `4. Enter the Child Care Foundation MTN number: ${paymentNumber}.`,
+                    `5. Enter UGX ${numericAmount.toLocaleString()} as the amount.`,
+                    "6. Enter a reason for sending, for example: Child Care Foundation donation.",
+                    "7. Confirm that the recipient details and amount are correct.",
+                    "8. Enter your MTN Mobile Money PIN to authorize the payment.",
+                    "9. Wait for the MTN confirmation SMS and keep your transaction ID.",
+                    `10. Return to this website and enter the transaction ID below.`,
                     "Your donation will remain awaiting verification until the Child Care Foundation administrator confirms receipt."
                 ]
                 : [
-                    `Send UGX ${numericAmount.toLocaleString()} to Airtel Money number ${paymentNumber}.`,
-                    `Account name: ${accountName}.`,
-                    "After completing the payment, enter the Mobile Money transaction ID below.",
+                    `Give an amount you can afford to pay. Your selected donation amount is UGX ${numericAmount.toLocaleString()}.`,
+                    "Airtel Money — complete the payment from your phone:",
+                    "1. Dial *185#.",
+                    "2. Select Send Money.",
+                    `3. Enter the Child Care Foundation Airtel Money number: ${paymentNumber}.`,
+                    `4. Enter UGX ${numericAmount.toLocaleString()} as the amount.`,
+                    "5. Enter your Airtel Money PIN to authorize the payment.",
+                    "6. Confirm that the recipient details and amount are correct.",
+                    "7. Wait for the Airtel Money confirmation SMS and keep your transaction ID.",
+                    "8. Return to this website and enter the transaction ID below.",
                     "Your donation will remain awaiting verification until the Child Care Foundation administrator confirms receipt."
                 ];
 
