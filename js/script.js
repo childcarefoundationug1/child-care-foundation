@@ -138,13 +138,36 @@ async function submitManualMobileDonation({
                 <hr>
 
                 <p>
-                    <strong>Mobile Money Transaction ID</strong>
+                    <strong>After Making Your Payment</strong>
                 </p>
 
                 <p>
-                    Enter the transaction ID from the SMS you received
-                    after making the payment.
+                    <strong>Step 1:</strong> Complete the Mobile Money payment
+                    using the instructions above.
                 </p>
+
+                <p>
+                    <strong>Step 2:</strong> Wait for the Mobile Money
+                    confirmation SMS on your phone.
+                </p>
+
+                <p>
+                    <strong>Step 3:</strong> Find the transaction ID in the
+                    confirmation SMS and enter it below.
+                </p>
+
+                <p>
+                    <strong>Step 4:</strong> Click
+                    <strong>"I Have Paid — Submit Transaction ID"</strong>
+                    to send your payment details for verification.
+                </p>
+
+                <p>
+                    <strong>Important:</strong> Do not submit the transaction
+                    ID until you have completed the payment.
+                </p>
+
+                <input
 
                 <input
                     type="text"
