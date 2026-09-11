@@ -393,6 +393,57 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
     </div>
 
 </div>
+<!-- HOME SLIDE MANAGEMENT -->
+
+<div class="section" style="margin-top: 30px;">
+
+    <div class="section-header">
+        <h2>Home Slide Photos</h2>
+    </div>
+
+    <div class="card">
+
+        <h3>Upload Home Slide Photo</h3>
+
+        <p>Upload a photo to appear in the homepage animation.</p>
+
+        <form id="homeSlideUploadForm">
+
+            <input
+                type="file"
+                id="homeSlideImage"
+                name="image"
+                accept="image/*"
+                required
+            >
+
+            <br><br>
+
+            <button type="submit" class="refresh">
+                📤 Upload Home Slide
+            </button>
+
+        </form>
+
+        <div id="homeSlideMessage"></div>
+
+        <hr>
+
+        <h3>Current Home Slide Photos</h3>
+
+        <div id="homeSlideLoading">
+            Loading home slide photos...
+        </div>
+
+        <div
+            id="homeSlideGrid"
+            style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;margin-top:20px;"
+        ></div>
+
+    </div>
+
+</div>
+
 <!-- GALLERY MANAGEMENT -->
 
 <div class="section" style="margin-top: 30px;">
@@ -1095,6 +1146,224 @@ loadMessages();
 loadVolunteers();
 
 
+
+// ===============================
+// HOME SLIDE MANAGEMENT
+// ===============================
+
+async function loadHomeSlides() {
+    const grid = document.getElementById("homeSlideGrid");
+    const loading = document.getElementById("homeSlideLoading");
+
+    if (!grid) return;
+
+    try {
+        loading.textContent = "Loading home slide photos...";
+
+        const response = await fetch(`${API_URL}/api/home-slides`);
+        const data = await response.json();
+
+        if (!data.success || !Array.isArray(data.images)) {
+            throw new Error("Unable to load home slide photos.");
+        }
+
+        grid.innerHTML = "";
+
+        if (data.images.length === 0) {
+            grid.innerHTML = `
+                <p style="grid-column:1/-1;">
+                    No home slide photos uploaded yet.
+                </p>
+            `;
+            loading.textContent = "";
+            return;
+        }
+
+        data.images.forEach(image => {
+            const card = document.createElement("div");
+
+            card.style.cssText = `
+                border:1px solid #ddd;
+                border-radius:10px;
+                padding:10px;
+                background:#fff;
+                overflow:hidden;
+            `;
+
+            const imageUrl = image.url.startsWith("http")
+                ? image.url
+                : `${API_URL}${image.url}`;
+
+            card.innerHTML = `
+                <img
+                    src="${imageUrl}"
+                    alt="Home slide"
+                    style="
+                        width:100%;
+                        height:180px;
+                        object-fit:cover;
+                        border-radius:8px;
+                        display:block;
+                    "
+                >
+
+                <p
+                    style="
+                        margin:10px 0;
+                        word-break:break-word;
+                        font-size:14px;
+                    "
+                >
+                    ${image.filename}
+                </p>
+
+                <button
+                    type="button"
+                    class="refresh"
+                    onclick="deleteHomeSlide('${encodeURIComponent(image.filename)}')"
+                    style="background:#c62828;"
+                >
+                    🗑️ Delete
+                </button>
+            `;
+
+            grid.appendChild(card);
+        });
+
+        loading.textContent = "";
+
+    } catch (error) {
+        console.error("Home slide loading error:", error);
+
+        loading.textContent =
+            "Failed to load home slide photos.";
+
+        grid.innerHTML = "";
+    }
+}
+
+
+async function deleteHomeSlide(encodedFilename) {
+    const filename = decodeURIComponent(encodedFilename);
+
+    if (!confirm(
+        `Delete this home slide photo?\n\n${filename}`
+    )) {
+        return;
+    }
+
+    const message = document.getElementById("homeSlideMessage");
+
+    try {
+        message.textContent = "Deleting home slide...";
+
+        const response = await authFetch(
+            `${API_URL}/api/admin/home-slides/${encodedFilename}`,
+            {
+                method: "DELETE",
+                credentials: "include"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Failed to delete home slide."
+            );
+        }
+
+        message.textContent =
+            "✅ Home slide deleted successfully.";
+
+        await loadHomeSlides();
+
+    } catch (error) {
+        console.error("Home slide delete error:", error);
+
+        message.textContent =
+            "❌ " + error.message;
+    }
+}
+
+
+// Home slide upload
+document
+    .getElementById("homeSlideUploadForm")
+    ?.addEventListener("submit", async function (event) {
+
+        event.preventDefault();
+
+        const fileInput =
+            document.getElementById("homeSlideImage");
+
+        const message =
+            document.getElementById("homeSlideMessage");
+
+        const file = fileInput.files[0];
+
+        if (!file) {
+            message.textContent =
+                "Please select an image first.";
+            return;
+        }
+
+        if (!file.type.startsWith("image/")) {
+            message.textContent =
+                "Only image files are allowed.";
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            message.textContent =
+                "Image must be 10 MB or smaller.";
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("image", file);
+
+        try {
+            message.textContent =
+                "Uploading home slide...";
+
+            const response = await authFetch(
+                `${API_URL}/api/admin/home-slides/upload`,
+                {
+                    method: "POST",
+                    body: formData,
+                    credentials: "include"
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.message ||
+                    "Failed to upload home slide."
+                );
+            }
+
+            message.textContent =
+                "✅ Home slide uploaded successfully.";
+
+            fileInput.value = "";
+
+            await loadHomeSlides();
+
+        } catch (error) {
+            console.error(
+                "Home slide upload error:",
+                error
+            );
+
+            message.textContent =
+                "❌ " + error.message;
+        }
+    });
+
+
 async function loadGallery() {
 
     const grid =
@@ -1300,6 +1569,7 @@ async function deleteGalleryImage(filename) {
 }
 
 
+loadHomeSlides();
 loadGallery();
 
 document

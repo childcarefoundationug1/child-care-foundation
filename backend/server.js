@@ -10,9 +10,14 @@ const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
 const galleryDir = path.join(uploadsDir, "gallery");
+const homeSlidesDir = path.join(uploadsDir, "home-slides");
 
 if (!fs.existsSync(galleryDir)) {
     fs.mkdirSync(galleryDir, { recursive: true });
+}
+
+if (!fs.existsSync(homeSlidesDir)) {
+    fs.mkdirSync(homeSlidesDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -39,6 +44,32 @@ const upload = multer({
         }
     }
 });
+
+const homeSlidesStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, homeSlidesDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueName =
+            Date.now() + "-" + file.originalname.replace(/\\s+/g, "-");
+        cb(null, uniqueName);
+    }
+});
+
+const uploadHomeSlide = multer({
+    storage: homeSlidesStorage,
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith("image/")) {
+            cb(null, true);
+        } else {
+            cb(new Error("Only image files are allowed."));
+        }
+    }
+});
+
 const session = require("express-session");
 
 
@@ -116,6 +147,126 @@ app.use(express.json());
 app.use(
     "/uploads/gallery",
     express.static(galleryDir)
+);
+
+app.use(
+    "/uploads/home-slides",
+    express.static(homeSlidesDir)
+);
+
+/*
+HOME SLIDE MANAGEMENT
+*/
+
+// Upload homepage animation image
+app.post(
+    "/api/admin/home-slides/upload",
+    requireAdmin,
+    uploadHomeSlide.single("image"),
+    (req, res) => {
+        try {
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No image file uploaded."
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "Home slide uploaded successfully.",
+                filename: req.file.filename,
+                originalName: req.file.originalname,
+                size: req.file.size,
+                mimetype: req.file.mimetype,
+                url: "/uploads/home-slides/" + req.file.filename
+            });
+        } catch (error) {
+            console.error("Home slide upload error:", error);
+
+            res.status(500).json({
+                success: false,
+                message: "Failed to upload home slide."
+            });
+        }
+    }
+);
+
+// List homepage animation images
+app.get("/api/home-slides", (req, res) => {
+    try {
+        if (!fs.existsSync(homeSlidesDir)) {
+            return res.json({
+                success: true,
+                images: []
+            });
+        }
+
+        const files = fs.readdirSync(homeSlidesDir)
+            .filter(file => {
+                const ext = path.extname(file).toLowerCase();
+                return [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(ext);
+            })
+            .sort();
+
+        const images = files.map(file => ({
+            filename: file,
+            url: "/uploads/home-slides/" + encodeURIComponent(file)
+        }));
+
+        res.json({
+            success: true,
+            images
+        });
+    } catch (error) {
+        console.error("Home slide list error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to load home slides."
+        });
+    }
+});
+
+// Delete homepage animation image
+app.delete(
+    "/api/admin/home-slides/:filename",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const filename = path.basename(req.params.filename);
+
+            if (!filename || filename !== req.params.filename) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid filename."
+                });
+            }
+
+            const filePath = path.join(homeSlidesDir, filename);
+
+            if (!fs.existsSync(filePath)) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Home slide not found."
+                });
+            }
+
+            fs.unlinkSync(filePath);
+
+            res.json({
+                success: true,
+                message: "Home slide deleted successfully."
+            });
+        } catch (error) {
+            console.error("Home slide delete error:", error);
+
+            res.status(500).json({
+                success: false,
+                message: "Failed to delete home slide."
+            });
+        }
+    }
 );
 app.use(express.static(path.join(__dirname, "..")));
 app.use(session({
@@ -924,7 +1075,9 @@ app.post(
 
     console.error(
         "Verification SMS failed:",
-        smsError.message || smsError
+        smsError.response?.data ||
+        smsError.message ||
+        smsError
     );
 
 }
