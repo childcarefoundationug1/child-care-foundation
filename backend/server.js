@@ -121,6 +121,7 @@ app.set("trust proxy", 1);
 
 const FRONTEND_ORIGINS = [
     "https://child-care-foundation-ug.netlify.app",
+    "https://child-care-foundation-org.pages.dev",
     "https://child-care-foundation-website-production.up.railway.app",
     "https://pay.pesapal.com"
 ];
