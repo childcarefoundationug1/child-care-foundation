@@ -632,3 +632,5 @@ function startAutomaticHomeSlideshow() {
     }, 5000);
 }
 
+
+/* Frontend deployment refresh */
