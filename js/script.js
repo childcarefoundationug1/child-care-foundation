@@ -558,3 +558,67 @@ if (cardDonationForm) {
     }, 5000);
 
 })();
+
+/* =========================================================
+   AUTOMATIC HOME SLIDES
+   Loads Home Slide photos uploaded from Admin Dashboard
+   ========================================================= */
+document.addEventListener("DOMContentLoaded", async function () {
+    const slideshow = document.querySelector(".hero-slideshow");
+    if (!slideshow) return;
+
+    const API_URL = "https://child-care-foundation-api-production.up.railway.app";
+
+    try {
+        const response = await fetch(`${API_URL}/api/home-slides`);
+        const data = await response.json();
+
+        if (!data.success || !Array.isArray(data.images) || data.images.length === 0) {
+            console.log("No uploaded Home Slides. Keeping default slides.");
+            startAutomaticHomeSlideshow();
+            return;
+        }
+
+        slideshow.innerHTML = "";
+
+        data.images.forEach((image, index) => {
+            const slide = document.createElement("div");
+            slide.className = "hero-slide" + (index === 0 ? " active" : "");
+
+            const img = document.createElement("img");
+            img.src = image.url.startsWith("http")
+                ? image.url
+                : API_URL + image.url;
+            img.alt = "Child Care Foundation Home Slide";
+            img.loading = index === 0 ? "eager" : "lazy";
+
+            slide.appendChild(img);
+            slideshow.appendChild(slide);
+        });
+
+        startAutomaticHomeSlideshow();
+
+        console.log(`✅ Loaded ${data.images.length} Home Slide photo(s).`);
+
+    } catch (error) {
+        console.error("Home Slide loading error:", error);
+        startAutomaticHomeSlideshow();
+    }
+});
+
+function startAutomaticHomeSlideshow() {
+    const slides = document.querySelectorAll(".hero-slide");
+
+    if (slides.length <= 1) return;
+
+    let currentSlide = 0;
+
+    setInterval(function () {
+        slides[currentSlide].classList.remove("active");
+
+        currentSlide = (currentSlide + 1) % slides.length;
+
+        slides[currentSlide].classList.add("active");
+    }, 5000);
+}
+
