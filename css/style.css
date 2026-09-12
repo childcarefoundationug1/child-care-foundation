@@ -961,9 +961,9 @@ SMALL DEVICES
     z-index: 1;
     background: linear-gradient(
         90deg,
-        rgba(0, 70, 35, 0.82),
-        rgba(0, 70, 35, 0.45),
-        rgba(0, 0, 0, 0.20)
+        rgba(0, 70, 35, 0.52),
+        rgba(0, 70, 35, 0.22),
+        rgba(0, 0, 0, 0.08)
     );
 }
 
@@ -1044,7 +1044,7 @@ SMALL DEVICES
     color: white;
     background: linear-gradient(
         transparent,
-        rgba(0, 70, 35, 0.92)
+        rgba(0, 70, 35, 0.62)
     );
 }
 
@@ -1101,8 +1101,8 @@ SMALL DEVICES
 
 /* Child Care Foundation official logo */
 .foundation-logo {
-    width: 58px;
-    height: 58px;
+    width: 72px;
+    height: 72px;
     object-fit: contain;
     border-radius: 50%;
     display: block;
