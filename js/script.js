@@ -1,3 +1,13 @@
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 const API_URL = "https://child-care-foundation-api-production.up.railway.app";
 
 const menuToggle = document.getElementById("menuToggle");
