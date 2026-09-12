@@ -932,28 +932,44 @@ async function processPesapalPayment(
         );
 
     const statusCode = Number(result.status_code);
+    const paymentDescription =
+        String(result.payment_status_description || "").toUpperCase();
+    const paymentStatus =
+        String(result.status || "").toUpperCase();
+    const errorMessage =
+        String(result.error?.message || "").toUpperCase();
 
     let newStatus = "pending";
 
+    // PesaPal can return status_code 0 / INVALID while
+    // the transaction is still waiting for payment.
     if (
+        errorMessage.includes("PENDING PAYMENT") ||
+        paymentDescription === "PENDING" ||
+        paymentStatus === "PENDING"
+    ) {
+        newStatus = "pending";
+    } else if (
         statusCode === 1 ||
-        String(result.payment_status_description || "").toUpperCase() === "COMPLETED" ||
-        String(result.status || "").toUpperCase() === "COMPLETED"
+        paymentDescription === "COMPLETED" ||
+        paymentStatus === "COMPLETED"
     ) {
         newStatus = "completed";
     } else if (
         statusCode === 2 ||
-        String(result.payment_status_description || "").toUpperCase() === "FAILED" ||
-        String(result.status || "").toUpperCase() === "FAILED"
+        paymentDescription === "FAILED" ||
+        paymentStatus === "FAILED"
     ) {
         newStatus = "failed";
     } else if (
-        statusCode === 0 ||
         statusCode === 3 ||
-        String(result.payment_status_description || "").toUpperCase() === "INVALID" ||
-        String(result.payment_status_description || "").toUpperCase() === "REVERSED" ||
-        String(result.status || "").toUpperCase() === "INVALID" ||
-        String(result.status || "").toUpperCase() === "REVERSED"
+        paymentDescription === "REVERSED" ||
+        paymentStatus === "REVERSED"
+    ) {
+        newStatus = "failed";
+    } else if (
+        paymentDescription === "INVALID" ||
+        paymentStatus === "INVALID"
     ) {
         newStatus = "failed";
     }
