@@ -695,6 +695,81 @@ app.post("/api/donations/:reference/submit-payment", (req, res) => {
     }
 });
 
+async function pesapalToken() {
+    const response = await fetch(
+        `${PESAPAL_URL}/api/Auth/RequestToken`,
+        {
+            method: "POST",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                consumer_key:
+                    process.env.PESAPAL_CONSUMER_KEY,
+                consumer_secret:
+                    process.env.PESAPAL_CONSUMER_SECRET
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    if (!data.token) {
+        throw new Error(
+            data.message ||
+            data.error?.message ||
+            "Pesapal authentication failed"
+        );
+    }
+
+    return data.token;
+}
+
+async function pesapalIpn(token) {
+    const ipnUrl =
+        `${process.env.RAILWAY_PUBLIC_DOMAIN
+            ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+            : "https://child-care-foundation-api-production.up.railway.app"}/api/pesapal/ipn`;
+
+    if (process.env.PESAPAL_IPN_ID) {
+        return process.env.PESAPAL_IPN_ID;
+    }
+
+    const response = await fetch(
+        `${PESAPAL_URL}/api/URLSetup/RegisterIPN`,
+        {
+            method: "POST",
+            headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                url: ipnUrl,
+                ipn_notification_type: "GET"
+            })
+        }
+    );
+
+    const data = await response.json();
+
+    if (!data.ipn_id) {
+        throw new Error(
+            data.message ||
+            data.error?.message ||
+            "Pesapal IPN registration failed"
+        );
+    }
+
+    console.log(
+        "Pesapal IPN registered:",
+        data.ipn_id
+    );
+
+    return data.ipn_id;
+}
+
 app.post("/api/donate/card", async (req, res) => {
     try {
         const { name, email, amount } = req.body;
