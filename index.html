@@ -583,7 +583,11 @@ gtag('config', 'G-2KZLPFFX6V');
 
             <h4>Contact</h4>
 
-            <p><a href="tel:+256730463790">📞 +256 730 463 790</a></p>
+            <p>
+    <a href="#" onclick="openPhoneVerification(); return false;">
+        📞 +256 730 463 790
+    </a>
+</p>
             <p><a href="mailto:childcarefoundation.support@gmail.com">📧 childcarefoundation.support@gmail.com</a></p>
             <p>📍 Uganda</p>
 
@@ -761,6 +765,498 @@ Child Care Foundation UG WhatsApp Channel
             error
         );
     }
+})();
+</script>
+
+
+<!-- PHONE VERIFICATION MODAL -->
+<div
+    id="phoneVerificationModal"
+    style="
+        display:none;
+        position:fixed;
+        inset:0;
+        z-index:9999;
+        background:rgba(0,0,0,0.65);
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+    "
+>
+    <div
+        style="
+            background:#fff;
+            width:100%;
+            max-width:480px;
+            max-height:90vh;
+            overflow-y:auto;
+            border-radius:16px;
+            padding:25px;
+            box-sizing:border-box;
+            position:relative;
+        "
+    >
+
+        <button
+            type="button"
+            onclick="closePhoneVerification()"
+            style="
+                position:absolute;
+                top:12px;
+                right:15px;
+                border:0;
+                background:none;
+                font-size:28px;
+                cursor:pointer;
+                color:#555;
+            "
+            aria-label="Close"
+        >
+            &times;
+        </button>
+
+        <h2 style="margin-top:0;">
+            📞 Phone Verification
+        </h2>
+
+        <p>
+            To protect the foundation from unwanted calls,
+            please request permission before calling.
+        </p>
+
+        <form id="phoneVerificationForm">
+
+            <label for="verificationName">
+                Your Name
+            </label>
+
+            <input
+                type="text"
+                id="verificationName"
+                required
+                maxlength="100"
+                placeholder="Enter your name"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    padding:12px;
+                    margin:6px 0 15px;
+                    border:1px solid #ccc;
+                    border-radius:8px;
+                "
+            >
+
+            <label for="verificationPhone">
+                Your Phone Number
+            </label>
+
+            <input
+                type="tel"
+                id="verificationPhone"
+                required
+                maxlength="30"
+                placeholder="e.g. 0700 000 000"
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    padding:12px;
+                    margin:6px 0 15px;
+                    border:1px solid #ccc;
+                    border-radius:8px;
+                "
+            >
+
+            <label for="verificationReason">
+                Reason for Calling
+            </label>
+
+            <textarea
+                id="verificationReason"
+                required
+                minlength="10"
+                maxlength="1000"
+                rows="4"
+                placeholder="Briefly explain why you want to contact the foundation."
+                style="
+                    width:100%;
+                    box-sizing:border-box;
+                    padding:12px;
+                    margin:6px 0 15px;
+                    border:1px solid #ccc;
+                    border-radius:8px;
+                    resize:vertical;
+                "
+            ></textarea>
+
+            <button
+                type="submit"
+                id="submitPhoneVerification"
+                style="
+                    width:100%;
+                    padding:13px;
+                    border:0;
+                    border-radius:8px;
+                    background:#1877f2;
+                    color:white;
+                    font-size:16px;
+                    font-weight:bold;
+                    cursor:pointer;
+                "
+            >
+                Submit Verification Request
+            </button>
+
+        </form>
+
+        <div
+            id="phoneVerificationStatus"
+            style="
+                display:none;
+                margin-top:20px;
+                padding:15px;
+                border-radius:10px;
+                background:#f5f5f5;
+            "
+        ></div>
+
+    </div>
+</div>
+
+<script>
+(function () {
+
+    const API_URL =
+        "https://child-care-foundation-api-production.up.railway.app";
+
+    let phoneVerificationTimer = null;
+
+    window.openPhoneVerification = function () {
+
+        const modal =
+            document.getElementById(
+                "phoneVerificationModal"
+            );
+
+        if (!modal) return;
+
+        modal.style.display = "flex";
+
+        const savedRequestId =
+            localStorage.getItem(
+                "phoneVerificationRequestId"
+            );
+
+        if (savedRequestId) {
+            checkPhoneVerificationStatus(
+                savedRequestId
+            );
+        }
+    };
+
+    window.closePhoneVerification = function () {
+
+        const modal =
+            document.getElementById(
+                "phoneVerificationModal"
+            );
+
+        if (!modal) return;
+
+        modal.style.display = "none";
+
+        if (phoneVerificationTimer) {
+            clearInterval(
+                phoneVerificationTimer
+            );
+
+            phoneVerificationTimer = null;
+        }
+    };
+
+    const form =
+        document.getElementById(
+            "phoneVerificationForm"
+        );
+
+    const statusBox =
+        document.getElementById(
+            "phoneVerificationStatus"
+        );
+
+    function showStatus(message) {
+
+        statusBox.style.display = "block";
+        statusBox.innerHTML = message;
+    }
+
+    async function checkPhoneVerificationStatus(
+        requestId
+    ) {
+
+        try {
+
+            const response =
+                await fetch(
+                    `${API_URL}/api/phone-verification-request/${encodeURIComponent(requestId)}`
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.message ||
+                    "Unable to check request status."
+                );
+            }
+
+            if (data.status === "approved") {
+
+                if (phoneVerificationTimer) {
+                    clearInterval(
+                        phoneVerificationTimer
+                    );
+
+                    phoneVerificationTimer = null;
+                }
+
+                showStatus(`
+                    <strong style="color:green;">
+                        ✅ Your request has been approved.
+                    </strong>
+
+                    <p>
+                        You may now call the Child Care Foundation.
+                    </p>
+
+                    <a
+                        href="tel:${data.phone}"
+                        style="
+                            display:block;
+                            text-align:center;
+                            padding:12px;
+                            background:#1877f2;
+                            color:white;
+                            text-decoration:none;
+                            border-radius:8px;
+                            font-weight:bold;
+                        "
+                    >
+                        📞 Call Foundation
+                    </a>
+                `);
+
+                return;
+            }
+
+            if (data.status === "rejected") {
+
+                if (phoneVerificationTimer) {
+                    clearInterval(
+                        phoneVerificationTimer
+                    );
+
+                    phoneVerificationTimer = null;
+                }
+
+                showStatus(`
+                    <strong style="color:#b00020;">
+                        ❌ Your request was not approved.
+                    </strong>
+
+                    <p>
+                        You may close this message and submit
+                        a new request if necessary.
+                    </p>
+                `);
+
+                return;
+            }
+
+            showStatus(`
+                <strong>
+                    ⏳ Verification request is pending.
+                </strong>
+
+                <p>
+                    The foundation administrator is reviewing
+                    your request. This page will check again
+                    automatically.
+                </p>
+            `);
+
+        } catch (error) {
+
+            console.error(
+                "Phone verification status error:",
+                error
+            );
+
+            showStatus(`
+                <strong>
+                    Unable to check the request status.
+                </strong>
+
+                <p>
+                    Please try again shortly.
+                </p>
+            `);
+        }
+    }
+
+    if (form) {
+
+        form.addEventListener(
+            "submit",
+            async function (event) {
+
+                event.preventDefault();
+
+                const submitButton =
+                    document.getElementById(
+                        "submitPhoneVerification"
+                    );
+
+                const name =
+                    document.getElementById(
+                        "verificationName"
+                    ).value.trim();
+
+                const phone =
+                    document.getElementById(
+                        "verificationPhone"
+                    ).value.trim();
+
+                const reason =
+                    document.getElementById(
+                        "verificationReason"
+                    ).value.trim();
+
+                if (
+                    !name ||
+                    !phone ||
+                    !reason
+                ) {
+                    showStatus(
+                        "Please complete all required fields."
+                    );
+
+                    return;
+                }
+
+                if (reason.length < 10) {
+                    showStatus(
+                        "Please provide a reason of at least 10 characters."
+                    );
+
+                    return;
+                }
+
+                submitButton.disabled = true;
+                submitButton.textContent =
+                    "Submitting...";
+
+                try {
+
+                    const response =
+                        await fetch(
+                            `${API_URL}/api/phone-verification-request`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type":
+                                        "application/json"
+                                },
+                                body: JSON.stringify({
+                                    name,
+                                    phone,
+                                    reason
+                                })
+                            }
+                        );
+
+                    const data =
+                        await response.json();
+
+                    if (
+                        !response.ok ||
+                        !data.success
+                    ) {
+                        throw new Error(
+                            data.message ||
+                            "Unable to submit your request."
+                        );
+                    }
+
+                    if (!data.requestId) {
+                        throw new Error(
+                            "The request was submitted, but no tracking ID was returned."
+                        );
+                    }
+
+                    localStorage.setItem(
+                        "phoneVerificationRequestId",
+                        data.requestId
+                    );
+
+                    form.style.display = "none";
+
+                    showStatus(`
+                        <strong style="color:#1877f2;">
+                            ✅ Request submitted successfully.
+                        </strong>
+
+                        <p>
+                            Your request has been sent to the
+                            foundation administrator.
+                        </p>
+
+                        <p>
+                            Please wait for approval. We will
+                            automatically check your request status.
+                        </p>
+                    `);
+
+                    checkPhoneVerificationStatus(
+                        data.requestId
+                    );
+
+                    if (phoneVerificationTimer) {
+                        clearInterval(
+                            phoneVerificationTimer
+                        );
+                    }
+
+                    phoneVerificationTimer =
+                        setInterval(
+                            function () {
+                                checkPhoneVerificationStatus(
+                                    data.requestId
+                                );
+                            },
+                            10000
+                        );
+
+                } catch (error) {
+
+                    console.error(
+                        "Phone verification submission error:",
+                        error
+                    );
+
+                    showStatus(
+                        error.message ||
+                        "Unable to submit your request."
+                    );
+
+                    submitButton.disabled = false;
+                    submitButton.textContent =
+                        "Submit Verification Request";
+                }
+            }
+        );
+    }
+
 })();
 </script>
 

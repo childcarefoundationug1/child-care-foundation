@@ -323,6 +323,67 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
 
 </div>
 
+
+<!-- PHONE VERIFICATION REQUESTS -->
+
+<div class="section">
+
+    <div class="section-header">
+        <h2>📞 Phone Verification Requests</h2>
+
+        <button
+            class="refresh"
+            onclick="loadPhoneVerificationRequests()"
+        >
+            🔄 Refresh Requests
+        </button>
+    </div>
+
+    <div class="stats">
+
+        <div class="stat-card">
+            <h3>Total Requests</h3>
+            <p id="totalPhoneRequests">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Pending</h3>
+            <p id="pendingPhoneRequests">0</p>
+        </div>
+
+    </div>
+
+    <div style="overflow-x:auto;">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Reason</th>
+                    <th>Requested</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody id="phoneVerificationRequestsTable">
+
+                <tr>
+                    <td colspan="6">
+                        Loading phone verification requests...
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
 <!-- VOLUNTEER MANAGEMENT -->
 
 <div class="section">
@@ -1034,6 +1095,219 @@ async function updateVolunteerStatus(id, status) {
 
     }
 
+}
+
+
+async function loadPhoneVerificationRequests() {
+    try {
+        const response = await authFetch(
+            `${API_URL}/api/admin/phone-verification-requests`,
+            {
+                credentials: "include"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to load phone verification requests."
+            );
+        }
+
+        const requests = data.requests || [];
+
+        document.getElementById(
+            "totalPhoneRequests"
+        ).textContent = requests.length;
+
+        document.getElementById(
+            "pendingPhoneRequests"
+        ).textContent =
+            requests.filter(
+                request => request.status === "pending"
+            ).length;
+
+        const table =
+            document.getElementById(
+                "phoneVerificationRequestsTable"
+            );
+
+        if (requests.length === 0) {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        No phone verification requests found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        table.innerHTML = requests
+            .slice()
+            .reverse()
+            .map(request => {
+
+                const requested =
+                    request.requestedAt
+                        ? new Date(
+                            request.requestedAt
+                        ).toLocaleString()
+                        : "-";
+
+                const status =
+                    request.status || "pending";
+
+                let actions = "-";
+
+                if (status === "pending") {
+                    actions = `
+                        <button
+                            class="verify"
+                            onclick="approvePhoneVerificationRequest('${request.id}')"
+                        >
+                            ✅ Approve
+                        </button>
+
+                        <button
+                            class="delete"
+                            onclick="rejectPhoneVerificationRequest('${request.id}')"
+                        >
+                            ❌ Reject
+                        </button>
+                    `;
+                }
+
+                return `
+                    <tr>
+                        <td>${request.name || "-"}</td>
+
+                        <td>${request.phone || "-"}</td>
+
+                        <td>${request.reason || "-"}</td>
+
+                        <td>${requested}</td>
+
+                        <td>${status}</td>
+
+                        <td>${actions}</td>
+                    </tr>
+                `;
+            })
+            .join("");
+
+    } catch (error) {
+
+        console.error(
+            "Load phone verification requests error:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to load phone verification requests."
+        );
+    }
+}
+
+async function approvePhoneVerificationRequest(id) {
+
+    if (
+        !confirm(
+            "Approve this phone verification request?"
+        )
+    ) {
+        return;
+    }
+
+    try {
+
+        const response = await authFetch(
+            `${API_URL}/api/admin/phone-verification-requests/${id}/approve`,
+            {
+                method: "PATCH",
+                credentials: "include"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to approve the request."
+            );
+        }
+
+        alert(
+            "Phone verification request approved successfully."
+        );
+
+        await loadPhoneVerificationRequests();
+
+    } catch (error) {
+
+        console.error(
+            "Approve phone verification request error:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to approve the request."
+        );
+    }
+}
+
+async function rejectPhoneVerificationRequest(id) {
+
+    if (
+        !confirm(
+            "Reject this phone verification request?"
+        )
+    ) {
+        return;
+    }
+
+    try {
+
+        const response = await authFetch(
+            `${API_URL}/api/admin/phone-verification-requests/${id}/reject`,
+            {
+                method: "PATCH",
+                credentials: "include"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to reject the request."
+            );
+        }
+
+        alert(
+            "Phone verification request rejected."
+        );
+
+        await loadPhoneVerificationRequests();
+
+    } catch (error) {
+
+        console.error(
+            "Reject phone verification request error:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to reject the request."
+        );
+    }
 }
 
 async function loadMessages() {

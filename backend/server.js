@@ -1446,6 +1446,110 @@ app.get("/api/test-email", async (req, res) => {
     }
 });
 
+
+app.post("/api/phone-verification-request", async (req, res) => {
+    try {
+        const {
+            name,
+            phone,
+            reason
+        } = req.body;
+
+        if (!name || !phone || !reason) {
+            return res.status(400).json({
+                success: false,
+                message: "Please complete all required fields."
+            });
+        }
+
+        if (reason.trim().length < 10 || reason.trim().length > 1000) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide a reason between 10 and 1000 characters."
+            });
+        }
+
+        const requestsFile =
+            path.join(__dirname, "phone-verification-requests.json");
+
+        let requests = [];
+
+        if (fs.existsSync(requestsFile)) {
+            try {
+                requests = JSON.parse(
+                    fs.readFileSync(requestsFile, "utf8")
+                );
+            } catch (fileError) {
+                console.error(
+                    "Phone verification requests file error:",
+                    fileError
+                );
+                requests = [];
+            }
+        }
+
+        const newRequest = {
+            id: crypto.randomUUID(),
+            name: name.trim(),
+            phone: phone.trim(),
+            reason: reason.trim(),
+            requestedAt: new Date().toISOString(),
+            status: "pending"
+        };
+
+        requests.push(newRequest);
+
+        fs.writeFileSync(
+            requestsFile,
+            JSON.stringify(requests, null, 2)
+        );
+
+        console.log(
+            "Phone verification request saved:",
+            newRequest.id
+        );
+
+        sendFoundationEmail(
+            "New Phone Verification Request",
+            `
+New phone verification request received:
+
+Name: ${newRequest.name}
+Phone: ${newRequest.phone}
+Reason:
+${newRequest.reason}
+
+Status: Pending administrator approval.
+            `
+        ).catch(err =>
+            console.error(
+                "PHONE VERIFICATION EMAIL ERROR:",
+                err
+            )
+        );
+
+        return res.status(201).json({
+            success: true,
+            message:
+                "Your request has been sent to the foundation administrator for verification.",
+            requestId: newRequest.id
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Phone verification request error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Unable to submit your verification request right now."
+        });
+    }
+});
+
 app.post("/api/contact", async (req, res) => {
 
     try {
@@ -1565,6 +1669,262 @@ ${message}
 /* ==========================================================
    ADMIN: CONTACT MESSAGES
    ========================================================== */
+
+
+
+app.get(
+    "/api/phone-verification-request/:id",
+    (req, res) => {
+        try {
+            const requestsFile =
+                path.join(
+                    __dirname,
+                    "phone-verification-requests.json"
+                );
+
+            if (!fs.existsSync(requestsFile)) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "Verification request not found."
+                });
+            }
+
+            const requests =
+                JSON.parse(
+                    fs.readFileSync(
+                        requestsFile,
+                        "utf8"
+                    )
+                );
+
+            const request =
+                requests.find(
+                    item =>
+                        item.id === req.params.id
+                );
+
+            if (!request) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "Verification request not found."
+                });
+            }
+
+            const response = {
+                success: true,
+                status: request.status
+            };
+
+            if (request.status === "approved") {
+                response.phone =
+                    "+256730463790";
+            }
+
+            return res.json(response);
+
+        } catch (error) {
+            console.error(
+                "Phone verification status error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to check verification status."
+            });
+        }
+    }
+);
+
+app.get(
+    "/api/admin/phone-verification-requests",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const requestsFile =
+                path.join(
+                    __dirname,
+                    "phone-verification-requests.json"
+                );
+
+            let requests = [];
+
+            if (fs.existsSync(requestsFile)) {
+                requests = JSON.parse(
+                    fs.readFileSync(
+                        requestsFile,
+                        "utf8"
+                    )
+                );
+            }
+
+            return res.json({
+                success: true,
+                requests
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Phone verification requests error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to load phone verification requests."
+            });
+        }
+    }
+);
+
+app.patch(
+    "/api/admin/phone-verification-requests/:id/approve",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const requestsFile =
+                path.join(
+                    __dirname,
+                    "phone-verification-requests.json"
+                );
+
+            let requests = [];
+
+            if (fs.existsSync(requestsFile)) {
+                requests = JSON.parse(
+                    fs.readFileSync(
+                        requestsFile,
+                        "utf8"
+                    )
+                );
+            }
+
+            const request =
+                requests.find(
+                    item =>
+                        item.id === req.params.id
+                );
+
+            if (!request) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "Phone verification request not found."
+                });
+            }
+
+            request.status = "approved";
+            request.reviewedAt =
+                new Date().toISOString();
+
+            fs.writeFileSync(
+                requestsFile,
+                JSON.stringify(
+                    requests,
+                    null,
+                    2
+                )
+            );
+
+            return res.json({
+                success: true,
+                message:
+                    "Phone verification request approved.",
+                phone:
+                    "+256730463790"
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Approve phone verification error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to approve the request."
+            });
+        }
+    }
+);
+
+app.patch(
+    "/api/admin/phone-verification-requests/:id/reject",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const requestsFile =
+                path.join(
+                    __dirname,
+                    "phone-verification-requests.json"
+                );
+
+            let requests = [];
+
+            if (fs.existsSync(requestsFile)) {
+                requests = JSON.parse(
+                    fs.readFileSync(
+                        requestsFile,
+                        "utf8"
+                    )
+                );
+            }
+
+            const request =
+                requests.find(
+                    item =>
+                        item.id === req.params.id
+                );
+
+            if (!request) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "Phone verification request not found."
+                });
+            }
+
+            request.status = "rejected";
+            request.reviewedAt =
+                new Date().toISOString();
+
+            fs.writeFileSync(
+                requestsFile,
+                JSON.stringify(
+                    requests,
+                    null,
+                    2
+                )
+            );
+
+            return res.json({
+                success: true,
+                message:
+                    "Phone verification request rejected."
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Reject phone verification error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to reject the request."
+            });
+        }
+    }
+);
 
 app.get("/api/admin/messages", requireAdmin, (req, res) => {
 
