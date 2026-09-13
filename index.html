@@ -708,6 +708,62 @@ Child Care Foundation UG WhatsApp Channel
 })();
 </script>
 
+
+<script>
+(async function loadImpactImages() {
+    try {
+        const response = await fetch(
+            "https://child-care-foundation-api-production.up.railway.app/api/impact/images"
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            return;
+        }
+
+        const cards = document.querySelectorAll(".category-card");
+
+        const categories = [
+            "education",
+            "food-nutrition",
+            "healthcare",
+            "community-outreach",
+            "child-support",
+            "hope-future"
+        ];
+
+        cards.forEach((card, index) => {
+            const category = categories[index];
+            const imageUrl = data.images[category];
+
+            // Keep the existing homepage image if no uploaded image exists.
+            if (!imageUrl) {
+                return;
+            }
+
+            const image = card.querySelector("img");
+
+            if (!image) {
+                return;
+            }
+
+            image.src =
+                "https://child-care-foundation-api-production.up.railway.app" +
+                imageUrl;
+
+            image.loading = "lazy";
+        });
+
+    } catch (error) {
+        console.error(
+            "Unable to load Impact images:",
+            error
+        );
+    }
+})();
+</script>
+
 </body>
 </html>
 <!-- Railway rebuild marker -->

@@ -527,7 +527,60 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
 <div class="section" style="margin-top: 30px;">
 
     <div class="section-header">
-        <h2>Gallery Management</h2>
+
+<h2>Impact Images</h2>
+
+<div class="admin-section">
+    <p>Upload or replace the six images shown under <strong>Our Impact in Pictures</strong>.</p>
+
+    <div class="upload-grid">
+
+        <form class="impactUploadForm" data-category="education">
+            <h3>Education</h3>
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">Upload Education Image</button>
+            <div class="impact-upload-message"></div>
+        </form>
+
+        <form class="impactUploadForm" data-category="food-nutrition">
+            <h3>Food &amp; Nutrition</h3>
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">Upload Food &amp; Nutrition Image</button>
+            <div class="impact-upload-message"></div>
+        </form>
+
+        <form class="impactUploadForm" data-category="healthcare">
+            <h3>Healthcare</h3>
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">Upload Healthcare Image</button>
+            <div class="impact-upload-message"></div>
+        </form>
+
+        <form class="impactUploadForm" data-category="community-outreach">
+            <h3>Community Outreach</h3>
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">Upload Community Outreach Image</button>
+            <div class="impact-upload-message"></div>
+        </form>
+
+        <form class="impactUploadForm" data-category="child-support">
+            <h3>Child Support</h3>
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">Upload Child Support Image</button>
+            <div class="impact-upload-message"></div>
+        </form>
+
+        <form class="impactUploadForm" data-category="hope-future">
+            <h3>Hope &amp; Future</h3>
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">Upload Hope &amp; Future Image</button>
+            <div class="impact-upload-message"></div>
+        </form>
+
+    </div>
+</div>
+
+<h2>Gallery Management</h2>
     </div>
 
     <div class="card">
@@ -1836,6 +1889,79 @@ document
             message.style.color = "red";
         }
 
+    });
+</script>
+
+
+<script>
+async function uploadImpactImage(form) {
+    const category = form.dataset.category;
+    const fileInput = form.querySelector('input[type="file"]');
+    const button = form.querySelector('button[type="submit"]');
+    const message = form.querySelector('.impact-upload-message');
+
+    if (!fileInput.files.length) {
+        message.textContent = "Please select an image.";
+        return;
+    }
+
+    const file = fileInput.files[0];
+
+    if (!file.type.startsWith("image/")) {
+        message.textContent = "Only image files are allowed.";
+        return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+        message.textContent = "Image must be 10MB or smaller.";
+        return;
+    }
+
+    const formData = new FormData();
+
+    // Category must be added before the image.
+    formData.append("category", category);
+    formData.append("image", file);
+
+    button.disabled = true;
+    message.textContent = "Uploading...";
+
+    try {
+        const response = await authFetch(
+            API_URL + "/api/admin/impact/upload",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Upload failed."
+            );
+        }
+
+        message.textContent = "Image uploaded successfully.";
+        fileInput.value = "";
+
+    } catch (error) {
+        console.error("Impact image upload error:", error);
+        message.textContent =
+            error.message || "Unable to upload image.";
+    } finally {
+        button.disabled = false;
+    }
+}
+
+document
+    .querySelectorAll(".impactUploadForm")
+    .forEach(form => {
+        form.addEventListener("submit", event => {
+            event.preventDefault();
+            uploadImpactImage(form);
+        });
     });
 </script>
 

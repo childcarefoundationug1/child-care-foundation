@@ -12,6 +12,7 @@ const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "upload
 const galleryDir = path.join(uploadsDir, "gallery");
 const homeSlidesDir = path.join(uploadsDir, "home-slides");
 const whatWeDoDir = path.join(uploadsDir, "what-we-do");
+const impactDir = path.join(uploadsDir, "impact");
 
 if (!fs.existsSync(galleryDir)) {
     fs.mkdirSync(galleryDir, { recursive: true });
@@ -23,6 +24,10 @@ if (!fs.existsSync(homeSlidesDir)) {
 
 if (!fs.existsSync(whatWeDoDir)) {
     fs.mkdirSync(whatWeDoDir, { recursive: true });
+}
+
+if (!fs.existsSync(impactDir)) {
+    fs.mkdirSync(impactDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -193,6 +198,10 @@ app.use(
 app.use(
     "/uploads/what-we-do",
     express.static(whatWeDoDir)
+);
+app.use(
+    "/uploads/impact",
+    express.static(impactDir)
 );
 
 /*
@@ -1796,6 +1805,102 @@ app.post(
     }
 );
 /*
+IMPACT IMAGE UPLOAD STORAGE
+*/
+const impactStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, impactDir);
+    },
+    filename: (req, file, cb) => {
+        const category = String(req.body.category || "image")
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+
+        const extension = path.extname(file.originalname).toLowerCase();
+
+        cb(null, category + extension);
+    }
+});
+
+const uploadImpact = multer({
+    storage: impactStorage,
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith("image/")) {
+            cb(null, true);
+        } else {
+            cb(new Error("Only image files are allowed."));
+        }
+    }
+});
+
+
+/*
+PUBLIC: IMPACT IMAGES
+*/
+app.get(
+    "/api/impact/images",
+    (req, res) => {
+        try {
+            const categories = [
+                "education",
+                "food-nutrition",
+                "healthcare",
+                "community-outreach",
+                "child-support",
+                "hope-future"
+            ];
+
+            const images = {};
+
+            for (const category of categories) {
+                const files = fs.readdirSync(impactDir)
+                    .filter(file => {
+                        const name = path.parse(file).name.toLowerCase();
+                        return name === category;
+                    });
+
+                if (files.length > 0) {
+                    const file = files
+                        .map(file => ({
+                            file,
+                            time: fs.statSync(
+                                path.join(impactDir, file)
+                            ).mtimeMs
+                        }))
+                        .sort((a, b) => b.time - a.time)[0].file;
+
+                    images[category] =
+                        `/uploads/impact/${file}`;
+                } else {
+                    images[category] = null;
+                }
+            }
+
+            return res.json({
+                success: true,
+                images
+            });
+
+        } catch (error) {
+            console.error(
+                "Impact images error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to load Impact images."
+            });
+        }
+    }
+);
+
+
+/*
 PUBLIC: WHAT WE DO IMAGES
 */
 app.get(
@@ -1946,6 +2051,102 @@ app.post(
         }
     }
 );
+
+/*
+ADMIN: IMPACT IMAGE UPLOAD
+*/
+app.post(
+    "/api/admin/impact/upload",
+    requireAdmin,
+    uploadImpact.single("image"),
+    (req, res) => {
+        try {
+            const allowedCategories = [
+                "education",
+                "food-nutrition",
+                "healthcare",
+                "community-outreach",
+                "child-support",
+                "hope-future"
+            ];
+
+            const category = String(req.body.category || "")
+                .toLowerCase()
+                .trim();
+
+            if (!allowedCategories.includes(category)) {
+                if (req.file) {
+                    fs.unlinkSync(req.file.path);
+                }
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid Impact category."
+                });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No image was uploaded."
+                });
+            }
+
+            // Remove older image files for this category.
+            const existingFiles = fs.readdirSync(impactDir);
+
+            for (const existingFile of existingFiles) {
+                const existingName =
+                    path.parse(existingFile).name.toLowerCase();
+
+                if (
+                    existingName === category &&
+                    existingFile !== req.file.filename
+                ) {
+                    const existingPath =
+                        path.join(impactDir, existingFile);
+
+                    if (fs.existsSync(existingPath)) {
+                        fs.unlinkSync(existingPath);
+                    }
+                }
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: "Impact image uploaded successfully.",
+                category,
+                image: {
+                    filename: req.file.filename,
+                    originalName: req.file.originalname,
+                    size: req.file.size,
+                    mimetype: req.file.mimetype,
+                    url: `/uploads/impact/${req.file.filename}`
+                }
+            });
+
+        } catch (error) {
+            console.error(
+                "Impact upload error:",
+                error
+            );
+
+            if (
+                req.file &&
+                req.file.path &&
+                fs.existsSync(req.file.path)
+            ) {
+                fs.unlinkSync(req.file.path);
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to upload Impact image."
+            });
+        }
+    }
+);
+
 
 /*
 ADMIN: GALLERY IMAGE UPLOAD
