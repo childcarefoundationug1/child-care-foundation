@@ -444,6 +444,84 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
 
 </div>
 
+<!-- WHAT WE DO IMAGE MANAGEMENT -->
+
+<div class="section" style="margin-top: 30px;">
+
+    <div class="section-header">
+        <h2>What We Do Images</h2>
+    </div>
+
+    <div class="card">
+
+        <p>
+            Upload or replace the images displayed in the
+            What We Do section on the homepage.
+        </p>
+
+        <div
+            style="
+                display:grid;
+                grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+                gap:20px;
+                margin-top:20px;
+            "
+        >
+
+            <div>
+                <h3>📚 Education</h3>
+                <form class="whatWeDoUploadForm" data-category="education">
+                    <input type="file" accept="image/*" required>
+                    <br><br>
+                    <button type="submit" class="refresh">
+                        📤 Upload Education Image
+                    </button>
+                </form>
+                <div class="whatWeDoMessage" id="whatWeDoMessageEducation"></div>
+            </div>
+
+            <div>
+                <h3>🏥 Healthcare</h3>
+                <form class="whatWeDoUploadForm" data-category="healthcare">
+                    <input type="file" accept="image/*" required>
+                    <br><br>
+                    <button type="submit" class="refresh">
+                        📤 Upload Healthcare Image
+                    </button>
+                </form>
+                <div class="whatWeDoMessage" id="whatWeDoMessageHealthcare"></div>
+            </div>
+
+            <div>
+                <h3>🍲 Food & Nutrition</h3>
+                <form class="whatWeDoUploadForm" data-category="food-nutrition">
+                    <input type="file" accept="image/*" required>
+                    <br><br>
+                    <button type="submit" class="refresh">
+                        📤 Upload Food Image
+                    </button>
+                </form>
+                <div class="whatWeDoMessage" id="whatWeDoMessageFoodNutrition"></div>
+            </div>
+
+            <div>
+                <h3>👕 Basic Needs</h3>
+                <form class="whatWeDoUploadForm" data-category="basic-needs">
+                    <input type="file" accept="image/*" required>
+                    <br><br>
+                    <button type="submit" class="refresh">
+                        📤 Upload Basic Needs Image
+                    </button>
+                </form>
+                <div class="whatWeDoMessage" id="whatWeDoMessageBasicNeeds"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 <!-- GALLERY MANAGEMENT -->
 
 <div class="section" style="margin-top: 30px;">
@@ -1567,6 +1645,98 @@ async function deleteGalleryImage(filename) {
         message.style.color = "red";
     }
 }
+
+
+async function uploadWhatWeDoImage(form) {
+
+    const category = form.dataset.category;
+    const input = form.querySelector('input[type="file"]');
+    const message = form.parentElement.querySelector(".whatWeDoMessage");
+
+    const file = input.files[0];
+
+    if (!file) {
+        message.textContent = "Please select an image.";
+        message.style.color = "red";
+        return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+        message.textContent = "Only image files are allowed.";
+        message.style.color = "red";
+        input.value = "";
+        return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+        message.textContent = "Image must be 10 MB or smaller.";
+        message.style.color = "red";
+        input.value = "";
+        return;
+    }
+
+    const formData = new FormData();
+
+    formData.append("category", category);
+    formData.append("image", file);
+
+    message.textContent = "Uploading image...";
+    message.style.color = "#087a42";
+
+    try {
+
+        const response = await authFetch(
+            `${API_URL}/api/admin/what-we-do/upload`,
+            {
+                method: "POST",
+                credentials: "include",
+                body: formData
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to upload image."
+            );
+        }
+
+        message.textContent =
+            "✅ Image uploaded successfully.";
+
+        message.style.color = "#087a42";
+
+        input.value = "";
+
+    } catch (error) {
+
+        console.error(
+            "What We Do upload error:",
+            error
+        );
+
+        message.textContent =
+            error.message || "Unable to upload image.";
+
+        message.style.color = "red";
+    }
+}
+
+
+document
+    .querySelectorAll(".whatWeDoUploadForm")
+    .forEach(form => {
+
+        form.addEventListener(
+            "submit",
+            function (event) {
+                event.preventDefault();
+                uploadWhatWeDoImage(form);
+            }
+        );
+
+    });
 
 
 loadHomeSlides();

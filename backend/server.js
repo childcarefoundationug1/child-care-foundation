@@ -11,6 +11,7 @@ const { Resend } = require("resend");
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
 const galleryDir = path.join(uploadsDir, "gallery");
 const homeSlidesDir = path.join(uploadsDir, "home-slides");
+const whatWeDoDir = path.join(uploadsDir, "what-we-do");
 
 if (!fs.existsSync(galleryDir)) {
     fs.mkdirSync(galleryDir, { recursive: true });
@@ -18,6 +19,10 @@ if (!fs.existsSync(galleryDir)) {
 
 if (!fs.existsSync(homeSlidesDir)) {
     fs.mkdirSync(homeSlidesDir, { recursive: true });
+}
+
+if (!fs.existsSync(whatWeDoDir)) {
+    fs.mkdirSync(whatWeDoDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -58,6 +63,36 @@ const homeSlidesStorage = multer.diskStorage({
 
 const uploadHomeSlide = multer({
     storage: homeSlidesStorage,
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith("image/")) {
+            cb(null, true);
+        } else {
+            cb(new Error("Only image files are allowed."));
+        }
+    }
+});
+
+const whatWeDoStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, whatWeDoDir);
+    },
+    filename: (req, file, cb) => {
+        const category = String(req.body.category || "image")
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+
+        const extension = path.extname(file.originalname).toLowerCase();
+
+        cb(null, category + extension);
+    }
+});
+
+const uploadWhatWeDo = multer({
+    storage: whatWeDoStorage,
     limits: {
         fileSize: 10 * 1024 * 1024
     },
@@ -153,6 +188,11 @@ app.use(
 app.use(
     "/uploads/home-slides",
     express.static(homeSlidesDir)
+);
+
+app.use(
+    "/uploads/what-we-do",
+    express.static(whatWeDoDir)
 );
 
 /*
@@ -1755,6 +1795,158 @@ app.post(
 
     }
 );
+/*
+PUBLIC: WHAT WE DO IMAGES
+*/
+app.get(
+    "/api/what-we-do/images",
+    (req, res) => {
+        try {
+            const categories = [
+                "education",
+                "healthcare",
+                "food-nutrition",
+                "basic-needs"
+            ];
+
+            const images = {};
+
+            for (const category of categories) {
+                const files = fs.readdirSync(whatWeDoDir)
+                    .filter(file => {
+                        const name = path.parse(file).name.toLowerCase();
+                        return name === category;
+                    });
+
+                if (files.length > 0) {
+                    const file = files
+                        .map(file => ({
+                            file,
+                            time: fs.statSync(
+                                path.join(whatWeDoDir, file)
+                            ).mtimeMs
+                        }))
+                        .sort((a, b) => b.time - a.time)[0].file;
+
+                    images[category] =
+                        `/uploads/what-we-do/${file}`;
+                } else {
+                    images[category] = null;
+                }
+            }
+
+            return res.json({
+                success: true,
+                images
+            });
+
+        } catch (error) {
+            console.error(
+                "What We Do images error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to load What We Do images."
+            });
+        }
+    }
+);
+
+
+/*
+ADMIN: WHAT WE DO IMAGE UPLOAD
+*/
+app.post(
+    "/api/admin/what-we-do/upload",
+    requireAdmin,
+    uploadWhatWeDo.single("image"),
+    (req, res) => {
+
+        try {
+            const allowedCategories = [
+                "education",
+                "healthcare",
+                "food-nutrition",
+                "basic-needs"
+            ];
+
+            const category = String(req.body.category || "")
+                .toLowerCase()
+                .trim();
+
+            if (!allowedCategories.includes(category)) {
+                if (req.file) {
+                    fs.unlinkSync(req.file.path);
+                }
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid What We Do category."
+                });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No image was uploaded."
+                });
+            }
+
+            // Remove older image files for this category.
+            const existingFiles = fs.readdirSync(whatWeDoDir);
+
+            for (const existingFile of existingFiles) {
+                const existingName = path.parse(existingFile).name.toLowerCase();
+
+                if (
+                    existingName === category &&
+                    existingFile !== req.file.filename
+                ) {
+                    const existingPath = path.join(
+                        whatWeDoDir,
+                        existingFile
+                    );
+
+                    if (fs.existsSync(existingPath)) {
+                        fs.unlinkSync(existingPath);
+                    }
+                }
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: "What We Do image uploaded successfully.",
+                category,
+                image: {
+                    filename: req.file.filename,
+                    originalName: req.file.originalname,
+                    size: req.file.size,
+                    mimetype: req.file.mimetype,
+                    url: `/uploads/what-we-do/${req.file.filename}`
+                }
+            });
+
+        } catch (error) {
+
+            console.error(
+                "What We Do upload error:",
+                error
+            );
+
+            if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to upload What We Do image."
+            });
+        }
+    }
+);
+
 /*
 ADMIN: GALLERY IMAGE UPLOAD
 */
