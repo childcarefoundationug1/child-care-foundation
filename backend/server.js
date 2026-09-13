@@ -1,6 +1,27 @@
 const express = require("express");
 require("dotenv").config();
 const PESAPAL_URL = process.env.PESAPAL_URL || "https://pay.pesapal.com/v3";
+
+const FLUTTERWAVE_CARD_CURRENCIES = new Set([
+    "GBP",
+    "CAD",
+    "XAF",
+    "COP",
+    "EGP",
+    "EUR",
+    "GHS",
+    "KES",
+    "INR",
+    "NGN",
+    "RWF",
+    "SLL",
+    "ZAR",
+    "TZS",
+    "UGX",
+    "USD",
+    "XOF",
+    "ZMW"
+]);
 const cors = require("cors");
 const crypto = require("crypto");
 const path = require("path");
@@ -821,27 +842,43 @@ async function pesapalIpn(token) {
 
 app.post("/api/donate/card", async (req, res) => {
     try {
-        const { name, email, amount } = req.body;
+        const { name, email, amount, currency } = req.body;
 
         if (!name || !email || !amount) {
             return res.status(400).json({
                 success: false,
-                message:
-                    "Name, email and amount are required."
+                message: "Name, email and amount are required."
             });
         }
 
         const numericAmount = Number(amount);
 
         if (
-            !Number.isInteger(numericAmount) ||
-            numericAmount < 500
+            !Number.isFinite(numericAmount) ||
+            numericAmount <= 0
         ) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Donation amount must be at least UGX 500."
+                    "Donation amount must be greater than zero."
             });
+        }
+
+        const selectedCurrency =
+            String(currency || "").trim().toUpperCase();
+
+        if (!FLUTTERWAVE_CARD_CURRENCIES.has(selectedCurrency)) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "The selected currency is not supported for card payments."
+            });
+        }
+
+        if (!process.env.FLW_SECRET_KEY) {
+            throw new Error(
+                "Flutterwave secret key is not configured."
+            );
         }
 
         const reference = createReference();
@@ -852,40 +889,40 @@ app.post("/api/donate/card", async (req, res) => {
             phone: "",
             email: email.trim(),
             amount: numericAmount,
-            payment_method: "Pesapal",
+            currency: selectedCurrency,
+            payment_method: "Flutterwave Card",
             status: "pending",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         });
 
-        const token = await pesapalToken();
-        const notificationId = await pesapalIpn(token);
-
         const result = await fetch(
-            `${PESAPAL_URL}/api/Transactions/SubmitOrderRequest`,
+            "https://api.flutterwave.com/v3/payments",
             {
                 method: "POST",
                 headers: {
                     "Authorization":
-                        `Bearer ${token}`,
+                        `Bearer ${process.env.FLW_SECRET_KEY}`,
                     "Content-Type":
                         "application/json"
                 },
                 body: JSON.stringify({
-                    id: reference,
-                    currency: "UGX",
+                    tx_ref: reference,
                     amount: numericAmount,
-                    description:
-                        "Child Care Foundation Donation",
-                    notification_id:
-                        notificationId,
-                    callback_url:
-                        "https://child-care-foundation-api-production.up.railway.app/api/pesapal/callback",
-                    billing_address: {
-                        email_address:
-                            email.trim(),
-                        first_name:
-                            name.trim()
+                    currency: selectedCurrency,
+                    redirect_url:
+                        "https://child-care-foundation-api-production.up.railway.app/api/flutterwave/callback",
+                    payment_options:
+                        "card",
+                    customer: {
+                        email: email.trim(),
+                        name: name.trim()
+                    },
+                    customizations: {
+                        title:
+                            "Child Care Foundation",
+                        description:
+                            "Child Care Foundation Donation"
                     }
                 })
             }
@@ -893,19 +930,21 @@ app.post("/api/donate/card", async (req, res) => {
 
         const data = await result.json();
 
-        if (!data.redirect_url) {
+        if (
+            !result.ok ||
+            data.status !== "success" ||
+            !data.data?.link
+        ) {
             throw new Error(
                 data.message ||
-                "Pesapal checkout URL missing"
+                "Flutterwave checkout URL missing."
             );
         }
 
         updateDonation(reference, {
-            pesapal_order_tracking_id:
-                data.order_tracking_id || null,
-            pesapal_status_code:
-                data.status_code ?? null,
-            pesapal_payment_status:
+            flutterwave_transaction_id:
+                data.data.id || null,
+            flutterwave_status:
                 "PENDING"
         });
 
@@ -913,12 +952,12 @@ app.post("/api/donate/card", async (req, res) => {
             success: true,
             reference,
             checkout_url:
-                data.redirect_url
+                data.data.link
         });
 
     } catch (error) {
         console.error(
-            "PESAPAL PAYMENT ERROR:",
+            "FLUTTERWAVE CARD PAYMENT ERROR:",
             error
         );
 
@@ -1102,6 +1141,189 @@ app.get("/api/pesapal/callback", async (req, res) => {
 
         return res.redirect(
             `${website}/payment-success.html?reference=${encodeURIComponent(OrderMerchantReference || "")}&status=error`
+        );
+    }
+});
+
+
+/*
+FLUTTERWAVE CARD PAYMENT VERIFICATION
+*/
+
+app.get("/api/flutterwave/callback", async (req, res) => {
+    const {
+        status,
+        tx_ref,
+        transaction_id
+    } = req.query;
+
+    const website =
+        "https://child-care-foundation-website-production.up.railway.app";
+
+    try {
+        if (!tx_ref || !transaction_id) {
+            return res.redirect(
+                `${website}/payment-success.html?status=invalid`
+            );
+        }
+
+        if (!process.env.FLW_SECRET_KEY) {
+            throw new Error(
+                "Flutterwave secret key is not configured."
+            );
+        }
+
+        const donation =
+            findDonation(String(tx_ref));
+
+        if (!donation) {
+            throw new Error(
+                `Donation ${tx_ref} was not found.`
+            );
+        }
+
+        const response = await fetch(
+            `https://api.flutterwave.com/v3/transactions/${encodeURIComponent(transaction_id)}/verify`,
+            {
+                method: "GET",
+                headers: {
+                    "Authorization":
+                        `Bearer ${process.env.FLW_SECRET_KEY}`,
+                    "Content-Type":
+                        "application/json"
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (
+            !response.ok ||
+            data.status !== "success" ||
+            !data.data
+        ) {
+            throw new Error(
+                data.message ||
+                "Flutterwave transaction verification failed."
+            );
+        }
+
+        const transaction = data.data;
+
+        const verifiedReference =
+            String(transaction.tx_ref || "");
+
+        const verifiedStatus =
+            String(transaction.status || "").toLowerCase();
+
+        const verifiedAmount =
+            Number(transaction.amount);
+
+        const donationAmount =
+            Number(donation.amount);
+
+        const amountsMatch =
+            Number.isFinite(verifiedAmount) &&
+            Number.isFinite(donationAmount) &&
+            Math.abs(verifiedAmount - donationAmount) < 0.01;
+
+        const verifiedCurrency =
+            String(transaction.currency || "")
+                .trim()
+                .toUpperCase();
+
+        const donationCurrency =
+            String(donation.currency || "")
+                .trim()
+                .toUpperCase();
+
+        if (verifiedReference !== String(tx_ref)) {
+            throw new Error(
+                "Flutterwave transaction reference mismatch."
+            );
+        }
+
+        if (verifiedReference !== String(donation.reference)) {
+            throw new Error(
+                "Donation reference mismatch."
+            );
+        }
+
+        if (!amountsMatch) {
+            throw new Error(
+                "Flutterwave transaction amount mismatch."
+            );
+        }
+
+        if (
+            !verifiedCurrency ||
+            verifiedCurrency !== donationCurrency
+        ) {
+            throw new Error(
+                "Flutterwave transaction currency mismatch."
+            );
+        }
+
+        let newStatus = "pending";
+
+        if (verifiedStatus === "successful") {
+            newStatus = "completed";
+        } else if (
+            verifiedStatus === "failed" ||
+            verifiedStatus === "cancelled"
+        ) {
+            newStatus = "failed";
+        }
+
+        const updated =
+            updateDonation(
+                String(tx_ref),
+                {
+                    status: newStatus,
+                    flutterwave_transaction_id:
+                        transaction.id || transaction_id,
+                    flutterwave_status:
+                        transaction.status || null,
+                    flutterwave_payment_type:
+                        transaction.payment_type || null,
+                    flutterwave_currency:
+                        verifiedCurrency,
+                    flutterwave_verified_amount:
+                        verifiedAmount,
+                    flutterwave_verified_at:
+                        new Date().toISOString()
+                }
+            );
+
+        if (!updated) {
+            throw new Error(
+                `Unable to update donation ${tx_ref}.`
+            );
+        }
+
+        console.log(
+            "Flutterwave card payment verified:",
+            {
+                reference: tx_ref,
+                transactionId: transaction.id,
+                status: newStatus,
+                amount: verifiedAmount,
+                currency: verifiedCurrency
+            }
+        );
+
+        return res.redirect(
+            `${website}/payment-success.html?reference=${encodeURIComponent(tx_ref)}&status=${encodeURIComponent(newStatus)}`
+        );
+
+    } catch (error) {
+        console.error(
+            "FLUTTERWAVE CALLBACK ERROR:",
+            error
+        );
+
+        return res.redirect(
+            `${website}/payment-success.html?reference=${encodeURIComponent(tx_ref || "")}&status=error`
         );
     }
 });

@@ -463,14 +463,17 @@ if (cardDonationForm) {
             const email =
                 document.getElementById("cardDonorEmail").value.trim();
 
+            const currency =
+                document.getElementById("cardDonationCurrency").value;
+
             const amount =
                 Number(
                     document.getElementById("cardDonationAmount").value
                 );
 
-            if (!name || !email || !amount || amount < 500) {
+            if (!name || !email || !currency || !amount || amount <= 0) {
                 message.textContent =
-                    "Please enter your name, email and a donation of at least UGX 500.";
+                    "Please enter your name, email, currency and a valid donation amount.";
 
                 message.className =
                     "payment-message error";
@@ -496,6 +499,7 @@ if (cardDonationForm) {
                         body: JSON.stringify({
                             name,
                             email,
+                            currency,
                             amount
                         })
                     }
