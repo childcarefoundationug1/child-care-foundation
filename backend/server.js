@@ -1447,6 +1447,383 @@ app.get("/api/test-email", async (req, res) => {
 });
 
 
+
+/*
+WHATSAPP VERIFICATION REQUEST
+*/
+app.post("/api/whatsapp-verification-request", async (req, res) => {
+    try {
+        const {
+            name,
+            phone,
+            reason
+        } = req.body;
+
+        if (!name || !phone || !reason) {
+            return res.status(400).json({
+                success: false,
+                message: "Please complete all required fields."
+            });
+        }
+
+        if (
+            reason.trim().length < 10 ||
+            reason.trim().length > 1000
+        ) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Please provide a reason between 10 and 1000 characters."
+            });
+        }
+
+        const requestsFile =
+            path.join(
+                __dirname,
+                "whatsapp-verification-requests.json"
+            );
+
+        let requests = [];
+
+        if (fs.existsSync(requestsFile)) {
+            try {
+                requests = JSON.parse(
+                    fs.readFileSync(
+                        requestsFile,
+                        "utf8"
+                    )
+                );
+            } catch (fileError) {
+                console.error(
+                    "WhatsApp verification requests file error:",
+                    fileError
+                );
+                requests = [];
+            }
+        }
+
+        const newRequest = {
+            id: crypto.randomUUID(),
+            name: name.trim(),
+            phone: phone.trim(),
+            reason: reason.trim(),
+            requestedAt: new Date().toISOString(),
+            status: "pending"
+        };
+
+        requests.push(newRequest);
+
+        fs.writeFileSync(
+            requestsFile,
+            JSON.stringify(
+                requests,
+                null,
+                2
+            )
+        );
+
+        console.log(
+            "WhatsApp verification request saved:",
+            newRequest.id
+        );
+
+        sendFoundationEmail(
+            "New WhatsApp Verification Request",
+            `
+New WhatsApp verification request received:
+
+Name: ${newRequest.name}
+Phone: ${newRequest.phone}
+Reason:
+${newRequest.reason}
+
+Status: Pending administrator approval.
+            `
+        ).catch(err =>
+            console.error(
+                "WHATSAPP VERIFICATION EMAIL ERROR:",
+                err
+            )
+        );
+
+        return res.status(201).json({
+            success: true,
+            message:
+                "Your WhatsApp request has been sent to the foundation administrator for verification.",
+            requestId: newRequest.id
+        });
+
+    } catch (error) {
+        console.error(
+            "WhatsApp verification request error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Unable to submit your WhatsApp verification request right now."
+        });
+    }
+});
+
+/*
+WHATSAPP VERIFICATION STATUS
+*/
+app.get(
+    "/api/whatsapp-verification-request/:id",
+    (req, res) => {
+        try {
+            const requestsFile =
+                path.join(
+                    __dirname,
+                    "whatsapp-verification-requests.json"
+                );
+
+            if (!fs.existsSync(requestsFile)) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "WhatsApp verification request not found."
+                });
+            }
+
+            const requests =
+                JSON.parse(
+                    fs.readFileSync(
+                        requestsFile,
+                        "utf8"
+                    )
+                );
+
+            const request =
+                requests.find(
+                    item =>
+                        item.id === req.params.id
+                );
+
+            if (!request) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "WhatsApp verification request not found."
+                });
+            }
+
+            const response = {
+                success: true,
+                status: request.status
+            };
+
+            if (request.status === "approved") {
+                response.whatsapp =
+                    "https://wa.me/256730463790?text=Hello%20Child%20Care%20Foundation%2C%20I%20would%20like%20to%20ask%20about%20your%20work.";
+            }
+
+            return res.json(response);
+
+        } catch (error) {
+            console.error(
+                "WhatsApp verification status error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to check WhatsApp verification status."
+            });
+        }
+    }
+);
+
+/*
+ADMIN WHATSAPP VERIFICATION REQUESTS
+*/
+app.get(
+    "/api/admin/whatsapp-verification-requests",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const requestsFile =
+                path.join(
+                    __dirname,
+                    "whatsapp-verification-requests.json"
+                );
+
+            let requests = [];
+
+            if (fs.existsSync(requestsFile)) {
+                requests = JSON.parse(
+                    fs.readFileSync(
+                        requestsFile,
+                        "utf8"
+                    )
+                );
+            }
+
+            return res.json({
+                success: true,
+                requests
+            });
+
+        } catch (error) {
+            console.error(
+                "WhatsApp verification requests error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to load WhatsApp verification requests."
+            });
+        }
+    }
+);
+
+app.patch(
+    "/api/admin/whatsapp-verification-requests/:id/approve",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const requestsFile =
+                path.join(
+                    __dirname,
+                    "whatsapp-verification-requests.json"
+                );
+
+            let requests = [];
+
+            if (fs.existsSync(requestsFile)) {
+                requests = JSON.parse(
+                    fs.readFileSync(
+                        requestsFile,
+                        "utf8"
+                    )
+                );
+            }
+
+            const request =
+                requests.find(
+                    item =>
+                        item.id === req.params.id
+                );
+
+            if (!request) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "WhatsApp verification request not found."
+                });
+            }
+
+            request.status = "approved";
+            request.reviewedAt =
+                new Date().toISOString();
+
+            fs.writeFileSync(
+                requestsFile,
+                JSON.stringify(
+                    requests,
+                    null,
+                    2
+                )
+            );
+
+            return res.json({
+                success: true,
+                message:
+                    "WhatsApp verification request approved.",
+                whatsapp:
+                    "https://wa.me/256730463790?text=Hello%20Child%20Care%20Foundation%2C%20I%20would%20like%20to%20ask%20about%20your%20work."
+            });
+
+        } catch (error) {
+            console.error(
+                "Approve WhatsApp verification error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to approve the WhatsApp request."
+            });
+        }
+    }
+);
+
+app.patch(
+    "/api/admin/whatsapp-verification-requests/:id/reject",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const requestsFile =
+                path.join(
+                    __dirname,
+                    "whatsapp-verification-requests.json"
+                );
+
+            let requests = [];
+
+            if (fs.existsSync(requestsFile)) {
+                requests = JSON.parse(
+                    fs.readFileSync(
+                        requestsFile,
+                        "utf8"
+                    )
+                );
+            }
+
+            const request =
+                requests.find(
+                    item =>
+                        item.id === req.params.id
+                );
+
+            if (!request) {
+                return res.status(404).json({
+                    success: false,
+                    message:
+                        "WhatsApp verification request not found."
+                });
+            }
+
+            request.status = "rejected";
+            request.reviewedAt =
+                new Date().toISOString();
+
+            fs.writeFileSync(
+                requestsFile,
+                JSON.stringify(
+                    requests,
+                    null,
+                    2
+                )
+            );
+
+            return res.json({
+                success: true,
+                message:
+                    "WhatsApp verification request rejected."
+            });
+
+        } catch (error) {
+            console.error(
+                "Reject WhatsApp verification error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to reject the WhatsApp request."
+            });
+        }
+    }
+);
+
 app.post("/api/phone-verification-request", async (req, res) => {
     try {
         const {

@@ -607,7 +607,7 @@ gtag('config', 'G-2KZLPFFX6V');
 
 
 
-<a href="https://wa.me/256730463790" aria-label="WhatsApp"><img src="https://cdn.simpleicons.org/whatsapp/25D366" alt="WhatsApp"> WhatsApp</a>
+<a href="#" onclick="openWhatsAppVerification(); return false;" aria-label="WhatsApp"><img src="https://cdn.simpleicons.org/whatsapp/25D366" alt="WhatsApp"> WhatsApp</a>
 
 </div>
 
@@ -1258,6 +1258,257 @@ Child Care Foundation UG WhatsApp Channel
     }
 
 })();
+</script>
+
+
+<!-- WHATSAPP VERIFICATION MODAL -->
+
+<div id="whatsappVerificationModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;width:100%;max-width:500px;border-radius:14px;padding:24px;box-sizing:border-box;position:relative;color:#222;">
+
+        <button type="button" onclick="closeWhatsAppVerification()" style="position:absolute;right:14px;top:10px;border:0;background:none;font-size:26px;cursor:pointer;">×</button>
+
+        <h2>WhatsApp Verification</h2>
+
+        <p>
+            Please submit your details. Our team will review your request before WhatsApp contact is enabled.
+        </p>
+
+        <form id="whatsappVerificationForm">
+
+            <label for="whatsappVerificationName">Your Name</label>
+            <input id="whatsappVerificationName" type="text" required style="width:100%;padding:10px;margin:6px 0 14px;box-sizing:border-box;">
+
+            <label for="whatsappVerificationPhone">Your Phone Number</label>
+            <input id="whatsappVerificationPhone" type="tel" required style="width:100%;padding:10px;margin:6px 0 14px;box-sizing:border-box;">
+
+            <label for="whatsappVerificationReason">Why would you like to contact us?</label>
+            <textarea id="whatsappVerificationReason" required minlength="10" maxlength="1000" rows="4" style="width:100%;padding:10px;margin:6px 0 14px;box-sizing:border-box;"></textarea>
+
+            <button type="submit" style="width:100%;padding:12px;border:0;border-radius:8px;background:#25D366;color:#fff;font-weight:bold;cursor:pointer;">
+                Submit Verification Request
+            </button>
+
+        </form>
+
+        <div id="whatsappVerificationStatus" style="margin-top:16px;"></div>
+
+    </div>
+</div>
+
+<script>
+const WHATSAPP_VERIFICATION_API =
+    "https://child-care-foundation-api-production.up.railway.app";
+
+let whatsappVerificationPollingTimer = null;
+
+function openWhatsAppVerification() {
+    const modal = document.getElementById("whatsappVerificationModal");
+
+    if (!modal) return;
+
+    modal.style.display = "flex";
+
+    const requestId =
+        localStorage.getItem("whatsappVerificationRequestId");
+
+    if (requestId) {
+        checkWhatsAppVerificationStatus(requestId);
+    }
+}
+
+function closeWhatsAppVerification() {
+    const modal =
+        document.getElementById("whatsappVerificationModal");
+
+    if (modal) {
+        modal.style.display = "none";
+    }
+}
+
+document
+    .getElementById("whatsappVerificationForm")
+    .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const name =
+            document.getElementById("whatsappVerificationName")
+                .value.trim();
+
+        const phone =
+            document.getElementById("whatsappVerificationPhone")
+                .value.trim();
+
+        const reason =
+            document.getElementById("whatsappVerificationReason")
+                .value.trim();
+
+        const status =
+            document.getElementById("whatsappVerificationStatus");
+
+        status.innerHTML =
+            "<p>Submitting your request...</p>";
+
+        try {
+
+            const response = await fetch(
+                `${WHATSAPP_VERIFICATION_API}/api/whatsapp-verification-request`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        name,
+                        phone,
+                        reason
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.message ||
+                    "Unable to submit verification request."
+                );
+            }
+
+            localStorage.setItem(
+                "whatsappVerificationRequestId",
+                data.requestId
+            );
+
+            status.innerHTML = `
+                <strong>Request submitted successfully.</strong>
+                <p>
+                    Please wait for our team to approve your WhatsApp
+                    contact request.
+                </p>
+            `;
+
+            startWhatsAppVerificationPolling(data.requestId);
+
+        } catch (error) {
+
+            console.error(
+                "WhatsApp verification request error:",
+                error
+            );
+
+            status.innerHTML = `
+                <p style="color:#b00020;">
+                    ${error.message}
+                </p>
+            `;
+        }
+    });
+
+async function checkWhatsAppVerificationStatus(requestId) {
+
+    try {
+
+        const response = await fetch(
+            `${WHATSAPP_VERIFICATION_API}/api/whatsapp-verification-request/${requestId}`
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            return;
+        }
+
+        const status =
+            document.getElementById(
+                "whatsappVerificationStatus"
+            );
+
+        if (
+            data.status === "approved" &&
+            data.whatsappUrl
+        ) {
+
+            status.innerHTML = `
+                <strong style="color:#128C7E;">
+                    WhatsApp contact approved.
+                </strong>
+
+                <p>
+                    You can now contact Child Care Foundation
+                    through WhatsApp.
+                </p>
+
+                <a
+                    href="${data.whatsappUrl}"
+                    target="_blank"
+                    rel="noopener"
+                    style="display:block;text-align:center;background:#25D366;color:#fff;padding:12px;border-radius:8px;text-decoration:none;font-weight:bold;"
+                >
+                    💬 Open WhatsApp
+                </a>
+            `;
+
+            stopWhatsAppVerificationPolling();
+
+        } else if (data.status === "rejected") {
+
+            status.innerHTML = `
+                <strong style="color:#b00020;">
+                    WhatsApp verification request rejected.
+                </strong>
+
+                <p>
+                    Please contact the foundation through another
+                    available method if you need assistance.
+                </p>
+            `;
+
+            stopWhatsAppVerificationPolling();
+
+        } else {
+
+            status.innerHTML = `
+                <p>
+                    ⏳ Your WhatsApp verification request is still
+                    pending approval.
+                </p>
+            `;
+        }
+
+    } catch (error) {
+
+        console.error(
+            "WhatsApp verification status error:",
+            error
+        );
+    }
+}
+
+function startWhatsAppVerificationPolling(requestId) {
+
+    stopWhatsAppVerificationPolling();
+
+    checkWhatsAppVerificationStatus(requestId);
+
+    whatsappVerificationPollingTimer =
+        setInterval(function() {
+            checkWhatsAppVerificationStatus(requestId);
+        }, 10000);
+}
+
+function stopWhatsAppVerificationPolling() {
+
+    if (whatsappVerificationPollingTimer) {
+
+        clearInterval(
+            whatsappVerificationPollingTimer
+        );
+
+        whatsappVerificationPollingTimer = null;
+    }
+}
 </script>
 
 </body>

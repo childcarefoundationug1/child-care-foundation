@@ -324,6 +324,67 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
 </div>
 
 
+
+<!-- WHATSAPP VERIFICATION REQUESTS -->
+
+<div class="section">
+
+    <div class="section-header">
+        <h2>💬 WhatsApp Verification Requests</h2>
+
+        <button
+            class="refresh"
+            onclick="loadWhatsAppVerificationRequests()"
+        >
+            🔄 Refresh Requests
+        </button>
+    </div>
+
+    <div class="stats">
+
+        <div class="stat-card">
+            <h3>Total Requests</h3>
+            <p id="totalWhatsAppRequests">0</p>
+        </div>
+
+        <div class="stat-card">
+            <h3>Pending</h3>
+            <p id="pendingWhatsAppRequests">0</p>
+        </div>
+
+    </div>
+
+    <div style="overflow-x:auto;">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Reason</th>
+                    <th>Requested</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody id="whatsappVerificationRequestsTable">
+
+                <tr>
+                    <td colspan="6">
+                        Loading WhatsApp verification requests...
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
 <!-- PHONE VERIFICATION REQUESTS -->
 
 <div class="section">
@@ -1097,6 +1158,214 @@ async function updateVolunteerStatus(id, status) {
 
 }
 
+
+
+async function loadWhatsAppVerificationRequests() {
+    try {
+        const response = await authFetch(
+            `${API_URL}/api/admin/whatsapp-verification-requests`,
+            {
+                credentials: "include"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to load WhatsApp verification requests."
+            );
+        }
+
+        const requests = data.requests || [];
+
+        document.getElementById(
+            "totalWhatsAppRequests"
+        ).textContent = requests.length;
+
+        document.getElementById(
+            "pendingWhatsAppRequests"
+        ).textContent =
+            requests.filter(
+                request => request.status === "pending"
+            ).length;
+
+        const table =
+            document.getElementById(
+                "whatsappVerificationRequestsTable"
+            );
+
+        if (requests.length === 0) {
+            table.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        No WhatsApp verification requests found.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        table.innerHTML = requests
+            .slice()
+            .reverse()
+            .map(request => {
+
+                const requested =
+                    request.requestedAt
+                        ? new Date(
+                            request.requestedAt
+                        ).toLocaleString()
+                        : "-";
+
+                const status =
+                    request.status || "pending";
+
+                let actions = "-";
+
+                if (status === "pending") {
+                    actions = `
+                        <button
+                            class="verify"
+                            onclick="approveWhatsAppVerificationRequest('${request.id}')"
+                        >
+                            ✅ Approve
+                        </button>
+
+                        <button
+                            class="delete"
+                            onclick="rejectWhatsAppVerificationRequest('${request.id}')"
+                        >
+                            ❌ Reject
+                        </button>
+                    `;
+                }
+
+                return `
+                    <tr>
+                        <td>${request.name || "-"}</td>
+                        <td>${request.phone || "-"}</td>
+                        <td>${request.reason || "-"}</td>
+                        <td>${requested}</td>
+                        <td>${status}</td>
+                        <td>${actions}</td>
+                    </tr>
+                `;
+            })
+            .join("");
+
+    } catch (error) {
+
+        console.error(
+            "Load WhatsApp verification requests error:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to load WhatsApp verification requests."
+        );
+    }
+}
+
+async function approveWhatsAppVerificationRequest(id) {
+
+    if (
+        !confirm(
+            "Approve this WhatsApp verification request?"
+        )
+    ) {
+        return;
+    }
+
+    try {
+
+        const response = await authFetch(
+            `${API_URL}/api/admin/whatsapp-verification-requests/${id}/approve`,
+            {
+                method: "PATCH",
+                credentials: "include"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to approve the WhatsApp request."
+            );
+        }
+
+        alert(
+            "WhatsApp verification request approved successfully."
+        );
+
+        await loadWhatsAppVerificationRequests();
+
+    } catch (error) {
+
+        console.error(
+            "Approve WhatsApp verification request error:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to approve the WhatsApp request."
+        );
+    }
+}
+
+async function rejectWhatsAppVerificationRequest(id) {
+
+    if (
+        !confirm(
+            "Reject this WhatsApp verification request?"
+        )
+    ) {
+        return;
+    }
+
+    try {
+
+        const response = await authFetch(
+            `${API_URL}/api/admin/whatsapp-verification-requests/${id}/reject`,
+            {
+                method: "PATCH",
+                credentials: "include"
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to reject the WhatsApp request."
+            );
+        }
+
+        alert(
+            "WhatsApp verification request rejected."
+        );
+
+        await loadWhatsAppVerificationRequests();
+
+    } catch (error) {
+
+        console.error(
+            "Reject WhatsApp verification request error:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to reject the WhatsApp request."
+        );
+    }
+}
 
 async function loadPhoneVerificationRequests() {
     try {
