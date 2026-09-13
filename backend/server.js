@@ -2690,6 +2690,227 @@ app.delete("/api/admin/messages/:id", requireAdmin, (req, res) => {
 
 });
 
+
+/*
+FLUTTERWAVE WEBHOOK
+*/
+
+app.post("/api/flutterwave/webhook", async (req, res) => {
+    try {
+        const secretHash = process.env.FLW_WEBHOOK_SECRET_HASH;
+
+        if (!secretHash) {
+            console.error("FLUTTERWAVE WEBHOOK ERROR: Secret hash is not configured.");
+            return res.status(500).json({
+                success: false,
+                message: "Webhook secret is not configured."
+            });
+        }
+
+        const receivedHash =
+            req.headers["verif-hash"] ||
+            req.headers["flutterwave-signature"] ||
+            "";
+
+        if (!receivedHash || receivedHash !== secretHash) {
+            console.warn("FLUTTERWAVE WEBHOOK: Unauthorized request.");
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized webhook request."
+            });
+        }
+
+        const payload = req.body || {};
+        const transactionId =
+            payload?.data?.id ||
+            payload?.data?.transaction_id ||
+            null;
+
+        const txRef =
+            payload?.data?.tx_ref ||
+            payload?.data?.txRef ||
+            null;
+
+        console.log("Flutterwave webhook received:", {
+            event: payload?.event || null,
+            transactionId,
+            txRef
+        });
+
+        if (!transactionId || !txRef) {
+            return res.status(200).json({
+                success: true,
+                message: "Webhook received."
+            });
+        }
+
+        if (!process.env.FLW_SECRET_KEY) {
+            throw new Error("Flutterwave secret key is not configured.");
+        }
+
+        const donation = findDonation(String(txRef));
+
+        if (!donation) {
+            console.warn(
+                `FLUTTERWAVE WEBHOOK: Donation ${txRef} was not found.`
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Webhook received."
+            });
+        }
+
+        const response = await fetch(
+            `https://api.flutterwave.com/v3/transactions/${encodeURIComponent(transactionId)}/verify`,
+            {
+                method: "GET",
+                headers: {
+                    "Authorization":
+                        `Bearer ${process.env.FLW_SECRET_KEY}`,
+                    "Content-Type":
+                        "application/json"
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (
+            !response.ok ||
+            data.status !== "success" ||
+            !data.data
+        ) {
+            throw new Error(
+                data.message ||
+                "Flutterwave webhook transaction verification failed."
+            );
+        }
+
+        const transaction = data.data;
+
+        const verifiedReference =
+            String(transaction.tx_ref || "");
+
+        const verifiedStatus =
+            String(transaction.status || "").toLowerCase();
+
+        const verifiedAmount =
+            Number(transaction.amount);
+
+        const donationAmount =
+            Number(donation.amount);
+
+        const amountsMatch =
+            Number.isFinite(verifiedAmount) &&
+            Number.isFinite(donationAmount) &&
+            Math.abs(verifiedAmount - donationAmount) < 0.01;
+
+        const verifiedCurrency =
+            String(transaction.currency || "")
+                .trim()
+                .toUpperCase();
+
+        const donationCurrency =
+            String(donation.currency || "")
+                .trim()
+                .toUpperCase();
+
+        if (verifiedReference !== String(txRef)) {
+            throw new Error(
+                "Flutterwave webhook transaction reference mismatch."
+            );
+        }
+
+        if (verifiedReference !== String(donation.reference)) {
+            throw new Error(
+                "Donation reference mismatch."
+            );
+        }
+
+        if (!amountsMatch) {
+            throw new Error(
+                "Flutterwave webhook transaction amount mismatch."
+            );
+        }
+
+        if (
+            !verifiedCurrency ||
+            verifiedCurrency !== donationCurrency
+        ) {
+            throw new Error(
+                "Flutterwave webhook transaction currency mismatch."
+            );
+        }
+
+        let newStatus = "pending";
+
+        if (verifiedStatus === "successful") {
+            newStatus = "completed";
+        } else if (
+            verifiedStatus === "failed" ||
+            verifiedStatus === "cancelled"
+        ) {
+            newStatus = "failed";
+        }
+
+        const updated = updateDonation(
+            String(txRef),
+            {
+                status: newStatus,
+                flutterwave_transaction_id:
+                    transaction.id || transactionId,
+                flutterwave_status:
+                    transaction.status || null,
+                flutterwave_payment_type:
+                    transaction.payment_type || null,
+                flutterwave_currency:
+                    verifiedCurrency,
+                flutterwave_verified_amount:
+                    verifiedAmount,
+                flutterwave_verified_at:
+                    new Date().toISOString(),
+                flutterwave_webhook_verified_at:
+                    new Date().toISOString()
+            }
+        );
+
+        if (!updated) {
+            throw new Error(
+                `Unable to update donation ${txRef}.`
+            );
+        }
+
+        console.log(
+            "Flutterwave webhook payment verified:",
+            {
+                reference: txRef,
+                transactionId: transaction.id,
+                status: newStatus,
+                amount: verifiedAmount,
+                currency: verifiedCurrency
+            }
+        );
+
+        return res.status(200).json({
+            success: true,
+            status: newStatus
+        });
+
+    } catch (error) {
+        console.error(
+            "FLUTTERWAVE WEBHOOK ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to process webhook."
+        });
+    }
+});
+
+
 app.listen(PORT, () => {
 
     console.log(
