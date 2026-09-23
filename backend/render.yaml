@@ -1,6 +1,7 @@
 services:
   - type: web
     name: child-care-foundation-api
+    rootDir: backend
     runtime: node
     buildCommand: npm install
     startCommand: npm start

@@ -1,5 +1,5 @@
 const express = require("express");
-require("dotenv").config();
+require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 const PESAPAL_URL = process.env.PESAPAL_URL || "https://pay.pesapal.com/v3";
 
 const FLUTTERWAVE_CARD_CURRENCIES = new Set([
