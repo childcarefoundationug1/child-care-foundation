@@ -34,6 +34,7 @@ const galleryDir = path.join(uploadsDir, "gallery");
 const homeSlidesDir = path.join(uploadsDir, "home-slides");
 const whatWeDoDir = path.join(uploadsDir, "what-we-do");
 const impactDir = path.join(uploadsDir, "impact");
+const videosDir = path.join(uploadsDir, "videos");
 
 if (!fs.existsSync(galleryDir)) {
     fs.mkdirSync(galleryDir, { recursive: true });
@@ -49,6 +50,10 @@ if (!fs.existsSync(whatWeDoDir)) {
 
 if (!fs.existsSync(impactDir)) {
     fs.mkdirSync(impactDir, { recursive: true });
+}
+
+if (!fs.existsSync(videosDir)) {
+    fs.mkdirSync(videosDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
@@ -127,6 +132,38 @@ const uploadWhatWeDo = multer({
             cb(null, true);
         } else {
             cb(new Error("Only image files are allowed."));
+        }
+    }
+});
+
+const videoStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, videosDir);
+    },
+    filename: (req, file, cb) => {
+        const extension = path.extname(file.originalname).toLowerCase();
+        const baseName = path
+            .basename(file.originalname, extension)
+            .replace(/[^a-zA-Z0-9-_]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+
+        const uniqueName =
+            Date.now() + "-" + (baseName || "ccf-video") + extension;
+
+        cb(null, uniqueName);
+    }
+});
+
+const uploadVideo = multer({
+    storage: videoStorage,
+    limits: {
+        fileSize: 100 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith("video/")) {
+            cb(null, true);
+        } else {
+            cb(new Error("Only video files are allowed."));
         }
     }
 });
@@ -223,6 +260,11 @@ app.use(
 app.use(
     "/uploads/impact",
     express.static(impactDir)
+);
+
+app.use(
+    "/uploads/videos",
+    express.static(videosDir)
 );
 
 /*
@@ -3104,6 +3146,53 @@ app.post(
             return res.status(500).json({
                 success: false,
                 message: "Unable to upload Impact image."
+            });
+        }
+    }
+);
+
+
+/*
+ADMIN: VIDEO UPLOAD
+*/
+app.post(
+    "/api/admin/videos/upload",
+    requireAdmin,
+    uploadVideo.single("video"),
+    (req, res) => {
+        try {
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No video was uploaded."
+                });
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: "Video uploaded successfully.",
+                video: {
+                    filename: req.file.filename,
+                    originalName: req.file.originalname,
+                    size: req.file.size,
+                    mimetype: req.file.mimetype,
+                    url: `/uploads/videos/${req.file.filename}`
+                }
+            });
+        } catch (error) {
+            console.error("Video upload error:", error);
+
+            if (
+                req.file &&
+                req.file.path &&
+                fs.existsSync(req.file.path)
+            ) {
+                fs.unlinkSync(req.file.path);
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to upload video."
             });
         }
     }
