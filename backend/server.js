@@ -29,6 +29,7 @@ const fs = require("fs");
 const multer = require("multer");
 const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
+const supabase = require("./supabase");
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
 const galleryDir = path.join(uploadsDir, "gallery");
 const homeSlidesDir = path.join(uploadsDir, "home-slides");
@@ -202,13 +203,7 @@ const {
 
     updateDonation,
 
-    readDonations,
-
-    addVolunteer,
-
-    readVolunteers,
-
-    updateVolunteer
+    readDonations
 
 } = require("./database");
 
@@ -1592,18 +1587,11 @@ console.log("GET /api/admin/donations", req.session);
 VOLUNTEER REGISTRATION
 */
 
-app.post("/api/volunteers", (req, res) => {
-
+app.post("/api/volunteers", async (req, res) => {
     try {
-
         const {
             fullName,
-            phone,
-            email,
-            district,
-            skills,
-            availability,
-            reason
+            phone
         } = req.body;
 
         if (!fullName || !phone) {
@@ -1613,60 +1601,177 @@ app.post("/api/volunteers", (req, res) => {
             });
         }
 
-        const volunteer = addVolunteer({
-            fullName,
-            phone,
-            email,
-            district,
-            skills,
-            availability,
-            reason
-        });
+        const cleanName = fullName.trim();
+        const cleanPhone = phone.trim();
 
-        sendFoundationEmail(
-            "New Volunteer Application",
-            `
-New volunteer application received:
+        if (cleanName.length < 2 || cleanName.length > 100) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide a valid full name."
+            });
+        }
 
-Name: ${fullName}
-Phone: ${phone}
-Email: ${email}
-District: ${district}
-Skills: ${skills}
-Availability: ${availability}
+        if (cleanPhone.length < 7 || cleanPhone.length > 30) {
+            return res.status(400).json({
+                success: false,
+                message: "Please provide a valid phone number."
+            });
+        }
 
-Reason:
-${reason}
-`
-        ).catch(err => console.error("Volunteer email error:", err));
+        const {
+            generateVolunteerAccessCode
+        } = require("./volunteer-code");
 
-        return res.json({
+        const accessCode = generateVolunteerAccessCode();
+
+        const accessCodeHash =
+            await require("bcryptjs").hash(accessCode, 12);
+
+        const { data: volunteer, error } = await supabase
+            .from("volunteers")
+            .insert({
+                full_name: cleanName,
+                phone: cleanPhone,
+                access_code_hash: accessCodeHash,
+                status: "approved"
+            })
+            .select(
+                "id, volunteer_number, volunteer_id, full_name, phone, status, created_at"
+            )
+            .single();
+
+        if (error) {
+            console.error(
+                "Supabase volunteer registration error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to register volunteer."
+            });
+        }
+
+        return res.status(201).json({
             success: true,
-            message: "Volunteer application submitted successfully.",
-            volunteer
+            message: "Volunteer registered successfully.",
+            volunteer: {
+                id: volunteer.id,
+                volunteerId: volunteer.volunteer_id,
+                fullName: volunteer.full_name,
+                phone: volunteer.phone,
+                status: volunteer.status,
+                createdAt: volunteer.created_at
+            },
+            accessCode
         });
-
     } catch (error) {
-
-        console.error("Volunteer registration error:", error);
+        console.error(
+            "Volunteer registration error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
             message: "Unable to register volunteer."
         });
-
     }
-
 });
+/*
+VOLUNTEER VERIFICATION
+*/
+
+app.post("/api/volunteer/verify", async (req, res) => {
+    try {
+        const code = String(req.body?.code || "")
+            .trim()
+            .toUpperCase();
+
+        if (!code) {
+            return res.status(400).json({
+                valid: false,
+                message: "Volunteer access code is required."
+            });
+        }
+
+        const { data: volunteers, error } = await supabase
+            .from("volunteers")
+            .select(
+                "id, volunteer_id, full_name, access_code_hash, status"
+            )
+            .in("status", ["approved"]);
+
+        if (error) {
+            console.error(
+                "Supabase volunteer verification error:",
+                error
+            );
+
+            return res.status(500).json({
+                valid: false,
+                message: "Unable to verify volunteer access code."
+            });
+        }
+
+        for (const volunteer of volunteers || []) {
+            const matches = await require("bcryptjs").compare(
+                code,
+                volunteer.access_code_hash
+            );
+
+            if (matches) {
+                return res.json({
+                    valid: true,
+                    volunteerId: volunteer.volunteer_id,
+                    volunteerName: volunteer.full_name,
+                    message: "Volunteer verified successfully."
+                });
+            }
+        }
+
+        return res.status(401).json({
+            valid: false,
+            message: "Invalid or unauthorized volunteer access code."
+        });
+    } catch (error) {
+        console.error(
+            "Volunteer verification error:",
+            error
+        );
+
+        return res.status(500).json({
+            valid: false,
+            message: "Unable to verify volunteer access code."
+        });
+    }
+});
+
 /*
 ADMIN: GET ALL VOLUNTEERS
 */
 
-app.get("/api/admin/volunteers", requireAdmin, (req, res) => {
+app.get("/api/admin/volunteers", requireAdmin, async (req, res) => {
 
     try {
 
-        const volunteers = readVolunteers();
+        const { data: volunteers, error } = await supabase
+            .from("volunteers")
+            .select(
+                "id, volunteer_number, volunteer_id, full_name, phone, status, selfie_path, national_id_front_path, national_id_back_path, created_at, updated_at, approved_at"
+            )
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error(
+                "Supabase admin volunteers error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to load volunteers."
+            });
+        }
 
         return res.json({
             success: true,
@@ -2750,7 +2855,7 @@ ADMIN: UPDATE VOLUNTEER STATUS
 app.post(
     "/api/admin/volunteers/:id/status",
     requireAdmin,
-    (req, res) => {
+    async (req, res) => {
 
         try {
 
@@ -2769,17 +2874,38 @@ app.post(
 
             }
 
-            const volunteer =
-                updateVolunteer(
-                    req.params.id,
-                    { status }
+            const { data: volunteer, error } = await supabase
+                .from("volunteers")
+                .update({
+                    status,
+                    updated_at: new Date().toISOString(),
+                    ...(status === "approved"
+                        ? { approved_at: new Date().toISOString() }
+                        : {})
+                })
+                .eq("id", req.params.id)
+                .select(
+                    "id, volunteer_number, volunteer_id, full_name, phone, status, selfie_path, national_id_front_path, national_id_back_path, created_at, updated_at, approved_at"
+                )
+                .single();
+
+            if (error) {
+
+                if (error.code === "PGRST116") {
+                    return res.status(404).json({
+                        success: false,
+                        message: "Volunteer not found."
+                    });
+                }
+
+                console.error(
+                    "Supabase volunteer status update error:",
+                    error
                 );
 
-            if (!volunteer) {
-
-                return res.status(404).json({
+                return res.status(500).json({
                     success: false,
-                    message: "Volunteer not found."
+                    message: "Unable to update volunteer status."
                 });
 
             }

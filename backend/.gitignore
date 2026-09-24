@@ -3,3 +3,12 @@ node_modules/
 
 cookies.txt
 *.log
+
+# Private local data
+donations.json
+messages.json
+volunteers.json
+*-local-backup
+
+# Local private data backups
+*.json.local-backup

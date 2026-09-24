@@ -150,29 +150,6 @@ function updateDonation(
     return donations[index];
 
 }
-function updateVolunteer(id, updates) {
-
-    const volunteers = readVolunteers();
-
-    const index =
-        volunteers.findIndex(
-            volunteer => volunteer.id === id
-        );
-
-    if (index === -1) {
-        return null;
-    }
-
-    volunteers[index] = {
-        ...volunteers[index],
-        ...updates
-    };
-
-    saveVolunteers(volunteers);
-
-    return volunteers[index];
-}
-
 module.exports = {
 
     readDonations,
@@ -183,46 +160,6 @@ module.exports = {
 
     findDonation,
 
-    updateDonation,
-
-    readVolunteers,
-
-    saveVolunteers,
-
-    addVolunteer,
-
-    updateVolunteer
+    updateDonation
 
 };
-const VOLUNTEERS_FILE = path.join(__dirname, "volunteers.json");
-
-function readVolunteers() {
-    if (!fs.existsSync(VOLUNTEERS_FILE)) {
-        fs.writeFileSync(VOLUNTEERS_FILE, "[]");
-    }
-
-    return JSON.parse(
-        fs.readFileSync(VOLUNTEERS_FILE, "utf8")
-    );
-}
-
-function saveVolunteers(volunteers) {
-    fs.writeFileSync(
-        VOLUNTEERS_FILE,
-        JSON.stringify(volunteers, null, 2)
-    );
-}
-
-function addVolunteer(volunteer) {
-    const volunteers = readVolunteers();
-
-    volunteer.id = Date.now().toString();
-    volunteer.status = "pending";
-    volunteer.created_at = new Date().toISOString();
-
-    volunteers.push(volunteer);
-
-    saveVolunteers(volunteers);
-
-    return volunteer;
-}
