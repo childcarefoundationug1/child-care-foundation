@@ -30,6 +30,9 @@ const multer = require("multer");
 const nodemailer = require("nodemailer");
 const { Resend } = require("resend");
 const supabase = require("./supabase");
+const {
+    uploadVolunteerDocument
+} = require("./volunteer-document-storage");
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
 const galleryDir = path.join(uploadsDir, "gallery");
 const homeSlidesDir = path.join(uploadsDir, "home-slides");
@@ -65,6 +68,31 @@ const storage = multer.diskStorage({
         const uniqueName =
             Date.now() + "-" + file.originalname.replace(/\s+/g, "-");
         cb(null, uniqueName);
+    }
+});
+
+const volunteerDocumentUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        files: 3,
+        fileSize: 10 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if (!allowedTypes.includes(file.mimetype)) {
+            return cb(
+                new Error(
+                    "Volunteer documents must be JPEG, PNG, or WebP images."
+                )
+            );
+        }
+
+        cb(null, true);
     }
 });
 
@@ -1587,7 +1615,14 @@ console.log("GET /api/admin/donations", req.session);
 VOLUNTEER REGISTRATION
 */
 
-app.post("/api/volunteers", async (req, res) => {
+app.post(
+    "/api/volunteers",
+    volunteerDocumentUpload.fields([
+        { name: "selfie", maxCount: 1 },
+        { name: "nationalIdFront", maxCount: 1 },
+        { name: "nationalIdBack", maxCount: 1 }
+    ]),
+    async (req, res) => {
     try {
         const {
             fullName,
@@ -1598,6 +1633,20 @@ app.post("/api/volunteers", async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Full name and phone are required."
+            });
+        }
+
+        const selfie = req.files?.selfie?.[0];
+        const nationalIdFront =
+            req.files?.nationalIdFront?.[0];
+        const nationalIdBack =
+            req.files?.nationalIdBack?.[0];
+
+        if (!selfie || !nationalIdFront || !nationalIdBack) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Volunteer selfie and both National ID images are required."
             });
         }
 
@@ -1652,16 +1701,88 @@ app.post("/api/volunteers", async (req, res) => {
             });
         }
 
+        let selfiePath;
+        let nationalIdFrontPath;
+        let nationalIdBackPath;
+
+        try {
+            selfiePath = await uploadVolunteerDocument({
+                volunteerId: volunteer.id,
+                documentType: "selfie",
+                file: selfie
+            });
+
+            nationalIdFrontPath =
+                await uploadVolunteerDocument({
+                    volunteerId: volunteer.id,
+                    documentType: "national-id-front",
+                    file: nationalIdFront
+                });
+
+            nationalIdBackPath =
+                await uploadVolunteerDocument({
+                    volunteerId: volunteer.id,
+                    documentType: "national-id-back",
+                    file: nationalIdBack
+                });
+        } catch (uploadError) {
+            console.error(
+                "Volunteer document upload error:",
+                uploadError
+            );
+
+            await supabase
+                .from("volunteers")
+                .delete()
+                .eq("id", volunteer.id);
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to securely store volunteer documents."
+            });
+        }
+
+        const {
+            data: updatedVolunteer,
+            error: updateError
+        } = await supabase
+            .from("volunteers")
+            .update({
+                selfie_path: selfiePath,
+                national_id_front_path: nationalIdFrontPath,
+                national_id_back_path: nationalIdBackPath,
+                updated_at: new Date().toISOString()
+            })
+            .eq("id", volunteer.id)
+            .select(
+                "id, volunteer_number, volunteer_id, full_name, phone, status, selfie_path, national_id_front_path, national_id_back_path, created_at"
+            )
+            .single();
+
+        if (updateError) {
+            console.error(
+                "Volunteer document path update error:",
+                updateError
+            );
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Volunteer was created, but document records could not be completed."
+            });
+        }
+
         return res.status(201).json({
             success: true,
             message: "Volunteer registered successfully.",
             volunteer: {
-                id: volunteer.id,
-                volunteerId: volunteer.volunteer_id,
-                fullName: volunteer.full_name,
-                phone: volunteer.phone,
-                status: volunteer.status,
-                createdAt: volunteer.created_at
+                id: updatedVolunteer.id,
+                volunteerId: updatedVolunteer.volunteer_id,
+                fullName: updatedVolunteer.full_name,
+                phone: updatedVolunteer.phone,
+                status: updatedVolunteer.status,
+                createdAt: updatedVolunteer.created_at
             },
             accessCode
         });
