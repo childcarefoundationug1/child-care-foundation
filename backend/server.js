@@ -2840,13 +2840,25 @@ app.delete("/api/admin/messages/:id", requireAdmin, (req, res) => {
 
 
 
-app.listen(PORT, () => {
+const { ensureVolunteerDocumentsBucket } =
+    require("./storage-setup");
 
-    console.log(
-        `Child Care Foundation API running on port ${PORT}`
-    );
+ensureVolunteerDocumentsBucket()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(
+                `Child Care Foundation API running on port ${PORT}`
+            );
+        });
+    })
+    .catch(error => {
+        console.error(
+            "Supabase Storage initialization failed:",
+            error
+        );
 
-});
+        process.exit(1);
+    });
 
 /*
 ADMIN: UPDATE VOLUNTEER STATUS
