@@ -8,7 +8,7 @@ function escapeHtml(value) {
         .replace(/'/g, "&#039;");
 }
 
-const API_URL = "https://child-care-foundation-api-production.up.railway.app";
+const API_URL = "https://child-care-foundation-api.onrender.com";
 
 const menuToggle = document.getElementById("menuToggle");
 const navigation = document.getElementById("navigation");
@@ -581,7 +581,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const slideshow = document.querySelector(".hero-slideshow");
     if (!slideshow) return;
 
-    const API_URL = "https://child-care-foundation-api-production.up.railway.app";
+    const API_URL = "https://child-care-foundation-api.onrender.com";
 
     try {
         const response = await fetch(`${API_URL}/api/home-slides`);
