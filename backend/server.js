@@ -907,12 +907,41 @@ async function pesapalIpn(token) {
 
 app.post("/api/donate/card", async (req, res) => {
     try {
-        const { name, email, amount, currency } = req.body;
+        const {
+            name,
+            email,
+            amount,
+            currency
+        } = req.body;
 
-        if (!name || !email || !amount) {
+        const allowedCurrencies = new Set([
+            "UGX",
+            "USD",
+            "GBP",
+            "EUR",
+            "KES",
+            "TZS",
+            "RWF"
+        ]);
+
+        const selectedCurrency =
+            String(currency || "UGX")
+                .trim()
+                .toUpperCase();
+
+        if (!name || !email || amount === undefined || amount === null) {
             return res.status(400).json({
                 success: false,
-                message: "Name, email and amount are required."
+                message:
+                    "Name, email, amount and currency are required."
+            });
+        }
+
+        if (!allowedCurrencies.has(selectedCurrency)) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Unsupported donation currency."
             });
         }
 
@@ -929,23 +958,6 @@ app.post("/api/donate/card", async (req, res) => {
             });
         }
 
-        const selectedCurrency =
-            String(currency || "").trim().toUpperCase();
-
-        if (!FLUTTERWAVE_CARD_CURRENCIES.has(selectedCurrency)) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "The selected currency is not supported for card payments."
-            });
-        }
-
-        if (!process.env.FLW_SECRET_KEY) {
-            throw new Error(
-                "Flutterwave secret key is not configured."
-            );
-        }
-
         const reference = createReference();
 
         addDonation({
@@ -955,39 +967,35 @@ app.post("/api/donate/card", async (req, res) => {
             email: email.trim(),
             amount: numericAmount,
             currency: selectedCurrency,
-            payment_method: "Flutterwave Card",
+            payment_method: "Pesapal",
             status: "pending",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
         });
 
+        const token = await pesapalToken();
+        const notificationId = await pesapalIpn(token);
+
         const result = await fetch(
-            "https://api.flutterwave.com/v3/payments",
+            `${PESAPAL_URL}/api/Transactions/SubmitOrderRequest`,
             {
                 method: "POST",
                 headers: {
-                    "Authorization":
-                        `Bearer ${process.env.FLW_SECRET_KEY}`,
-                    "Content-Type":
-                        "application/json"
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    tx_ref: reference,
-                    amount: numericAmount,
+                    id: reference,
                     currency: selectedCurrency,
-                    redirect_url:
-                        "https://child-care-foundation-api-production.up.railway.app/api/flutterwave/callback",
-                    payment_options:
-                        "card",
-                    customer: {
-                        email: email.trim(),
-                        name: name.trim()
-                    },
-                    customizations: {
-                        title:
-                            "Child Care Foundation",
-                        description:
-                            "Child Care Foundation Donation"
+                    amount: numericAmount,
+                    description:
+                        "Child Care Foundation Donation",
+                    notification_id: notificationId,
+                    callback_url:
+                        "https://child-care-foundation-api-production.up.railway.app/api/pesapal/callback",
+                    billing_address: {
+                        email_address: email.trim(),
+                        first_name: name.trim()
                     }
                 })
             }
@@ -997,32 +1005,34 @@ app.post("/api/donate/card", async (req, res) => {
 
         if (
             !result.ok ||
-            data.status !== "success" ||
-            !data.data?.link
+            !data.redirect_url
         ) {
             throw new Error(
                 data.message ||
-                "Flutterwave checkout URL missing."
+                "Pesapal checkout URL missing."
             );
         }
 
         updateDonation(reference, {
-            flutterwave_transaction_id:
-                data.data.id || null,
-            flutterwave_status:
+            pesapal_order_tracking_id:
+                data.order_tracking_id || null,
+            pesapal_status_code:
+                data.status_code ?? null,
+            pesapal_payment_status:
                 "PENDING"
         });
 
         res.json({
             success: true,
             reference,
+            currency: selectedCurrency,
             checkout_url:
-                data.data.link
+                data.redirect_url
         });
 
     } catch (error) {
         console.error(
-            "FLUTTERWAVE CARD PAYMENT ERROR:",
+            "PESAPAL PAYMENT ERROR:",
             error
         );
 
