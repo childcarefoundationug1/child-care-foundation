@@ -33,12 +33,17 @@ const supabase = require("./supabase");
 const {
     uploadVolunteerDocument
 } = require("./volunteer-document-storage");
+
+const {
+    uploadChildPhoto
+} = require("./child-photo-storage");
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, "..", "uploads");
 const galleryDir = path.join(uploadsDir, "gallery");
 const homeSlidesDir = path.join(uploadsDir, "home-slides");
 const whatWeDoDir = path.join(uploadsDir, "what-we-do");
 const impactDir = path.join(uploadsDir, "impact");
 const videosDir = path.join(uploadsDir, "videos");
+const liveStateFile = path.join(uploadsDir, "live-state.json");
 
 if (!fs.existsSync(galleryDir)) {
     fs.mkdirSync(galleryDir, { recursive: true });
@@ -58,6 +63,70 @@ if (!fs.existsSync(impactDir)) {
 
 if (!fs.existsSync(videosDir)) {
     fs.mkdirSync(videosDir, { recursive: true });
+}
+
+function getLiveState() {
+    try {
+        if (!fs.existsSync(liveStateFile)) {
+            return {
+                live: false,
+                title: "",
+                description: "",
+                url: "",
+                startedAt: null
+            };
+        }
+
+        const raw = fs.readFileSync(
+            liveStateFile,
+            "utf8"
+        );
+
+        const state = JSON.parse(raw);
+
+        return {
+            live: state.live === true,
+            title: typeof state.title === "string"
+                ? state.title
+                : "",
+            description: typeof state.description === "string"
+                ? state.description
+                : "",
+            url: typeof state.url === "string"
+                ? state.url
+                : "",
+            startedAt: state.startedAt || null
+        };
+    } catch (error) {
+        console.error(
+            "Live state read error:",
+            error
+        );
+
+        return {
+            live: false,
+            title: "",
+            description: "",
+            url: "",
+            startedAt: null
+        };
+    }
+}
+
+function saveLiveState(state) {
+    const temporaryFile =
+        `${liveStateFile}.tmp`;
+
+    fs.writeFileSync(
+        temporaryFile,
+        JSON.stringify(state, null, 2),
+        "utf8"
+    );
+
+    fs.renameSync(
+        temporaryFile,
+        liveStateFile
+    );
 }
 
 const storage = multer.diskStorage({
@@ -88,6 +157,31 @@ const volunteerDocumentUpload = multer({
             return cb(
                 new Error(
                     "Volunteer documents must be JPEG, PNG, or WebP images."
+                )
+            );
+        }
+
+        cb(null, true);
+    }
+});
+
+const childPhotoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        files: 1,
+        fileSize: 10 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if (!allowedTypes.includes(file.mimetype)) {
+            return cb(
+                new Error(
+                    "Child photo must be a JPEG, PNG, or WebP image."
                 )
             );
         }
@@ -417,6 +511,110 @@ app.use(session({
         maxAge: 60 * 60 * 1000
     }
 }));
+function createVolunteerRegistrationToken(volunteer) {
+    const secret = process.env.VOLUNTEER_REGISTRATION_TOKEN_SECRET;
+
+    if (!secret) {
+        throw new Error(
+            "VOLUNTEER_REGISTRATION_TOKEN_SECRET is required."
+        );
+    }
+
+    const payload = {
+        type: "volunteer-registration",
+        volunteerDbId: volunteer.id,
+        volunteerId: volunteer.volunteer_id,
+        exp: Date.now() + (30 * 60 * 1000)
+    };
+
+    const encodedPayload = Buffer
+        .from(JSON.stringify(payload))
+        .toString("base64url");
+
+    const signature = crypto
+        .createHmac("sha256", secret)
+        .update(encodedPayload)
+        .digest("base64url");
+
+    return encodedPayload + "." + signature;
+}
+
+function verifyVolunteerRegistrationToken(token) {
+    try {
+        const secret =
+            process.env.VOLUNTEER_REGISTRATION_TOKEN_SECRET;
+
+        if (!secret || !token) {
+            return null;
+        }
+
+        const parts = token.split(".");
+
+        if (parts.length !== 2) {
+            return null;
+        }
+
+        const [encodedPayload, signature] = parts;
+
+        const expectedSignature = crypto
+            .createHmac("sha256", secret)
+            .update(encodedPayload)
+            .digest("base64url");
+
+        const provided = Buffer.from(signature);
+        const expected = Buffer.from(expectedSignature);
+
+        if (
+            provided.length !== expected.length ||
+            !crypto.timingSafeEqual(provided, expected)
+        ) {
+            return null;
+        }
+
+        const payload = JSON.parse(
+            Buffer.from(encodedPayload, "base64url").toString("utf8")
+        );
+
+        if (
+            payload.type !== "volunteer-registration" ||
+            !payload.volunteerDbId ||
+            !payload.volunteerId ||
+            !payload.exp ||
+            Date.now() > payload.exp
+        ) {
+            return null;
+        }
+
+        return payload;
+    } catch (error) {
+        return null;
+    }
+}
+
+function requireVolunteerRegistrationToken(req, res, next) {
+    const authHeader = req.headers.authorization || "";
+
+    if (!authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+            success: false,
+            message: "Volunteer registration authorization is required."
+        });
+    }
+
+    const token = authHeader.slice(7);
+    const payload = verifyVolunteerRegistrationToken(token);
+
+    if (!payload) {
+        return res.status(401).json({
+            success: false,
+            message: "Volunteer registration authorization is invalid or expired."
+        });
+    }
+
+    req.volunteerRegistration = payload;
+    next();
+}
+
 function createAdminToken(username) {
     const secret = process.env.ADMIN_TOKEN_SECRET || process.env.SESSION_SECRET;
 
@@ -1851,10 +2049,14 @@ app.post("/api/volunteer/verify", async (req, res) => {
             );
 
             if (matches) {
+                const registrationToken =
+                    createVolunteerRegistrationToken(volunteer);
+
                 return res.json({
                     valid: true,
                     volunteerId: volunteer.volunteer_id,
                     volunteerName: volunteer.full_name,
+                    registrationToken,
                     message: "Volunteer verified successfully."
                 });
             }
@@ -1876,6 +2078,284 @@ app.post("/api/volunteer/verify", async (req, res) => {
         });
     }
 });
+
+/*
+CHILD REGISTRATION
+*/
+
+app.post(
+    "/api/children",
+    requireVolunteerRegistrationToken,
+    childPhotoUpload.single("childPhoto"),
+    async (req, res) => {
+        let uploadedPhotoPath = null;
+
+        try {
+            const volunteer = req.volunteerRegistration;
+
+            const { data: activeVolunteer, error: volunteerError } =
+                await supabase
+                    .from("volunteers")
+                    .select("id, volunteer_id, status")
+                    .eq("id", volunteer.volunteerDbId)
+                    .eq("volunteer_id", volunteer.volunteerId)
+                    .eq("status", "approved")
+                    .maybeSingle();
+
+            if (volunteerError) {
+                console.error(
+                    "Child registration volunteer lookup error:",
+                    volunteerError
+                );
+
+                return res.status(500).json({
+                    success: false,
+                    message: "Unable to verify volunteer authorization."
+                });
+            }
+
+            if (!activeVolunteer) {
+                return res.status(403).json({
+                    success: false,
+                    message:
+                        "Volunteer authorization is no longer active."
+                });
+            }
+
+            const cleanName =
+                String(req.body?.fullName || "").trim();
+
+            const dateOfBirth =
+                String(req.body?.dateOfBirth || "").trim();
+
+            const guardianName =
+                String(req.body?.guardianName || "").trim();
+
+            const guardianPhone =
+                String(req.body?.guardianPhone || "").trim();
+
+            const location =
+                String(req.body?.location || "").trim();
+
+            const otherNeed =
+                String(req.body?.otherNeed || "").trim();
+
+            if (!cleanName) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Child full name is required."
+                });
+            }
+
+            if (cleanName.length < 2 || cleanName.length > 150) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please provide a valid child name."
+                });
+            }
+
+            if (!dateOfBirth) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Child date of birth is required."
+                });
+            }
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Date of birth must use YYYY-MM-DD format."
+                });
+            }
+
+            const [birthYear, birthMonth, birthDay] =
+                dateOfBirth.split("-").map(Number);
+
+            const birthDate = new Date(
+                Date.UTC(birthYear, birthMonth - 1, birthDay)
+            );
+
+            if (
+                birthDate.getUTCFullYear() !== birthYear ||
+                birthDate.getUTCMonth() !== birthMonth - 1 ||
+                birthDate.getUTCDate() !== birthDay
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Please provide a valid date of birth."
+                });
+            }
+
+            if (!guardianName) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Guardian name is required."
+                });
+            }
+
+            if (!guardianPhone) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Guardian phone number is required."
+                });
+            }
+
+            if (!location) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Location is required."
+                });
+            }
+
+            const photo = req.file;
+
+            if (!photo) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Child photo is required."
+                });
+            }
+
+            let needs = [];
+
+            try {
+                const rawNeeds = req.body?.needs;
+
+                if (Array.isArray(rawNeeds)) {
+                    needs = rawNeeds;
+                } else if (typeof rawNeeds === "string") {
+                    const parsedNeeds = JSON.parse(rawNeeds);
+
+                    if (Array.isArray(parsedNeeds)) {
+                        needs = parsedNeeds;
+                    }
+                }
+            } catch (needsError) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Child needs must be a valid list."
+                });
+            }
+
+            needs = needs
+                .map((need) => String(need).trim())
+                .filter(Boolean);
+
+            if (needs.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "At least one child need must be selected."
+                });
+            }
+
+            if (needs.length > 20) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Too many child needs were submitted."
+                });
+            }
+
+            if (needs.includes("Other") && !otherNeed) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Please describe the other child need."
+                });
+            }
+
+            const registrationId =
+                "CCF-" +
+                Date.now().toString(36).toUpperCase() +
+                "-" +
+                crypto.randomBytes(4).toString("hex").toUpperCase();
+
+            uploadedPhotoPath = await uploadChildPhoto({
+                registrationId,
+                file: photo
+            });
+
+            const { data: child, error: childError } =
+                await supabase
+                    .from("children")
+                    .insert({
+                        registration_id: registrationId,
+                        full_name: cleanName,
+                        date_of_birth: dateOfBirth,
+                        guardian_name: guardianName,
+                        guardian_phone: guardianPhone,
+                        location,
+                        needs,
+                        other_need: otherNeed || null,
+                        photo_path: uploadedPhotoPath,
+                        volunteer_db_id: activeVolunteer.id,
+                        volunteer_id: activeVolunteer.volunteer_id,
+                        status: "registered"
+                    })
+                    .select(
+                        "id, registration_id, full_name, date_of_birth, guardian_name, guardian_phone, location, needs, other_need, photo_path, volunteer_id, status, created_at"
+                    )
+                    .single();
+
+            if (childError) {
+                console.error(
+                    "Supabase child registration error:",
+                    childError
+                );
+
+                await supabase.storage
+                    .from("child-photos")
+                    .remove([uploadedPhotoPath]);
+
+                uploadedPhotoPath = null;
+
+                return res.status(500).json({
+                    success: false,
+                    message:
+                        "Unable to save child registration."
+                });
+            }
+
+            return res.status(201).json({
+                success: true,
+                message:
+                    "Child registered successfully.",
+                registration: {
+                    id: child.id,
+                    registrationId: child.registration_id,
+                    childName: child.full_name,
+                    status: child.status,
+                    createdAt: child.created_at
+                }
+            });
+        } catch (error) {
+            console.error(
+                "Child registration error:",
+                error
+            );
+
+            if (uploadedPhotoPath) {
+                try {
+                    await supabase.storage
+                        .from("child-photos")
+                        .remove([uploadedPhotoPath]);
+                } catch (cleanupError) {
+                    console.error(
+                        "Child photo cleanup error:",
+                        cleanupError
+                    );
+                }
+            }
+
+            return res.status(500).json({
+                success: false,
+                message:
+                    "Unable to complete child registration."
+            });
+        }
+    }
+);
 
 /*
 ADMIN: GET ALL VOLUNTEERS
@@ -3415,6 +3895,172 @@ app.post(
             return res.status(500).json({
                 success: false,
                 message: "Unable to upload Impact image."
+            });
+        }
+    }
+);
+
+
+/*
+PUBLIC: LIVE BROADCAST STATUS
+*/
+app.get(
+    "/api/live",
+    (req, res) => {
+        const state = getLiveState();
+
+        return res.json({
+            success: true,
+            live: state.live,
+            title: state.live ? state.title : "",
+            description: state.live ? state.description : "",
+            url: state.live ? state.url : "",
+            startedAt: state.live ? state.startedAt : null
+        });
+    }
+);
+
+
+/*
+ADMIN: START LIVE BROADCAST
+*/
+app.post(
+    "/api/admin/live/start",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const currentState = getLiveState();
+
+            if (currentState.live) {
+                return res.status(409).json({
+                    success: false,
+                    message: "A live broadcast is already active."
+                });
+            }
+
+            const title =
+                String(req.body?.title || "").trim();
+
+            const description =
+                String(req.body?.description || "").trim();
+
+            const url =
+                String(req.body?.url || "").trim();
+
+            if (!title) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Live broadcast title is required."
+                });
+            }
+
+            if (title.length > 150) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Live broadcast title is too long."
+                });
+            }
+
+            if (description.length > 500) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Live broadcast description is too long."
+                });
+            }
+
+            let liveUrl;
+
+            try {
+                liveUrl = new URL(url);
+            } catch (_) {
+                return res.status(400).json({
+                    success: false,
+                    message: "A valid live broadcast URL is required."
+                });
+            }
+
+            if (!["http:", "https:"].includes(liveUrl.protocol)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Live broadcast URL must use HTTP or HTTPS."
+                });
+            }
+
+            const state = {
+                live: true,
+                title,
+                description,
+                url: liveUrl.toString(),
+                startedAt: new Date().toISOString()
+            };
+
+            saveLiveState(state);
+
+            return res.status(201).json({
+                success: true,
+                message: "Live broadcast started.",
+                live: state
+            });
+        } catch (error) {
+            console.error(
+                "Start live broadcast error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to start live broadcast."
+            });
+        }
+    }
+);
+
+
+/*
+ADMIN: STOP LIVE BROADCAST
+*/
+app.post(
+    "/api/admin/live/stop",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const currentState = getLiveState();
+
+            if (!currentState.live) {
+                return res.status(409).json({
+                    success: false,
+                    message: "No live broadcast is currently active."
+                });
+            }
+
+            const stoppedAt =
+                new Date().toISOString();
+
+            const state = {
+                live: false,
+                title: "",
+                description: "",
+                url: "",
+                startedAt: null,
+                stoppedAt
+            };
+
+            saveLiveState(state);
+
+            return res.json({
+                success: true,
+                message: "Live broadcast stopped.",
+                live: state
+            });
+        } catch (error) {
+            console.error(
+                "Stop live broadcast error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to stop live broadcast."
             });
         }
     }
