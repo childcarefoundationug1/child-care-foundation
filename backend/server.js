@@ -1122,9 +1122,7 @@ async function pesapalToken() {
 
 async function pesapalIpn(token) {
     const ipnUrl =
-        `${process.env.RAILWAY_PUBLIC_DOMAIN
-            ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-            : "https://child-care-foundation-api-production.up.railway.app"}/api/pesapal/ipn`;
+        "https://child-care-foundation-api.onrender.com/api/pesapal/ipn";
 
     if (process.env.PESAPAL_IPN_ID) {
         return process.env.PESAPAL_IPN_ID;
@@ -1251,7 +1249,7 @@ app.post("/api/donate/card", async (req, res) => {
                         "Child Care Foundation Donation",
                     notification_id: notificationId,
                     callback_url:
-                        "https://child-care-foundation-api-production.up.railway.app/api/pesapal/callback",
+                        "https://child-care-foundation-api.onrender.com/api/pesapal/callback",
                     billing_address: {
                         email_address: email.trim(),
                         first_name: name.trim()
