@@ -44,6 +44,26 @@ const whatWeDoDir = path.join(uploadsDir, "what-we-do");
 const impactDir = path.join(uploadsDir, "impact");
 const videosDir = path.join(uploadsDir, "videos");
 const liveStateFile = path.join(uploadsDir, "live-state.json");
+const foundationInfoFile = path.join(uploadsDir, "foundation-info.json");
+
+const DEFAULT_FOUNDATION_INFO = {
+    motto: "Every Child Deserves Hope",
+    vision: "A future where every child is valued, protected, supported, and given a meaningful opportunity to learn, grow in safety, live with dignity, and reach their full potential. Child Care Foundation envisions communities where children can develop their abilities and look toward the future with confidence, regardless of the challenges they may face.",
+    mission: "To support children and communities through practical, compassionate, and child-focused programmes that promote education, healthcare, food and nutrition, basic needs, dignity, protection, opportunity, and meaningful community participation. Our approach recognizes that children need more than one form of support: their wellbeing is strengthened when their educational, physical, emotional, social, and basic needs are considered together.",
+    coreValues: "Compassion — We treat children and families with care, kindness, and understanding.\n\nIntegrity — We aim to act honestly, responsibly, and transparently in the work entrusted to us.\n\nRespect — We recognize the dignity, rights, voices, cultures, and individual circumstances of every person.\n\nAccountability — We take responsibility for our actions, commitments, resources, and the trust placed in the foundation.\n\nInclusion — We believe children and communities should have opportunities to participate without unfair exclusion or discrimination.\n\nEmpowerment — We seek to strengthen children, families, volunteers, and communities so they can participate in creating positive and lasting change.",
+    storyHistory: "Child Care Foundation is built around a simple principle: every child deserves hope and the opportunity to build a better future. Our work brings together care, practical support, community participation, and opportunities for children to learn and develop. As the foundation grows, we remain committed to listening to communities, responding to real needs, treating every child with dignity, and developing programmes that place children and their wellbeing at the centre. Our story is an ongoing commitment to building brighter tomorrows, one child, family, and community at a time.",
+    approach: "Our programmes may develop as community needs and available resources change, while keeping children’s wellbeing at the centre of our work.",
+    contactInformation: "For general enquiries, registration support, partnerships, community programmes, and other information, please contact Child Care Foundation through our official communication channels.\n\nEmail — support@childcarefoundation.org\n\nFacebook — Child Care Foundation\n\nInstagram — @childcarefoundationug1\n\nX — @childcarefdug1\n\nWe welcome genuine enquiries and opportunities to work together in support of children and communities.",
+    whatWeDo: {
+        education: "We support opportunities that help children learn, develop useful knowledge and skills, and stay connected to education and their future goals.",
+        healthcare: "We promote access to appropriate health support and encourage attention to children’s physical wellbeing, healthy development, and prevention.",
+        foodNutrition: "We recognize that adequate food and good nutrition are important foundations for healthy growth, learning, and development.",
+        basicNeeds: "We seek to respond to essential needs that can affect a child’s safety, dignity, development, and ability to participate in everyday life.",
+        childWellbeing: "We promote an environment in which children are treated with dignity, care, and respect, while considering their individual circumstances.",
+        communitySupport: "We encourage positive community participation because sustainable support for children involves families, volunteers, communities, partners, and others committed to improving children’s lives."
+    },
+    updatedAt: null
+};
 
 if (!fs.existsSync(galleryDir)) {
     fs.mkdirSync(galleryDir, { recursive: true });
@@ -63,6 +83,49 @@ if (!fs.existsSync(impactDir)) {
 
 if (!fs.existsSync(videosDir)) {
     fs.mkdirSync(videosDir, { recursive: true });
+}
+
+function getFoundationInfo() {
+    try {
+        if (!fs.existsSync(foundationInfoFile)) {
+            return { ...DEFAULT_FOUNDATION_INFO };
+        }
+
+        const raw = fs.readFileSync(
+            foundationInfoFile,
+            "utf8"
+        );
+
+        const saved = JSON.parse(raw);
+
+        return {
+            ...DEFAULT_FOUNDATION_INFO,
+            ...(saved && typeof saved === "object" ? saved : {})
+        };
+    } catch (error) {
+        console.error(
+            "Foundation information read error:",
+            error
+        );
+
+        return { ...DEFAULT_FOUNDATION_INFO };
+    }
+}
+
+function saveFoundationInfo(info) {
+    const temporaryFile =
+        `${foundationInfoFile}.tmp`;
+
+    fs.writeFileSync(
+        temporaryFile,
+        JSON.stringify(info, null, 2),
+        "utf8"
+    );
+
+    fs.renameSync(
+        temporaryFile,
+        foundationInfoFile
+    );
 }
 
 function getLiveState() {
@@ -2472,6 +2535,122 @@ app.get("/api/admin/children", requireAdmin, async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Unable to load child records."
+        });
+    }
+});
+
+/*
+FOUNDATION INFORMATION
+*/
+
+app.get("/api/foundation-info", (req, res) => {
+    try {
+        return res.json({
+            success: true,
+            foundation: getFoundationInfo()
+        });
+    } catch (error) {
+        console.error(
+            "Public foundation information error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to load foundation information."
+        });
+    }
+});
+
+app.get("/api/admin/foundation-info", requireAdmin, (req, res) => {
+    try {
+        return res.json({
+            success: true,
+            foundation: getFoundationInfo()
+        });
+    } catch (error) {
+        console.error(
+            "Admin foundation information error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to load foundation information."
+        });
+    }
+});
+
+app.put("/api/admin/foundation-info", requireAdmin, (req, res) => {
+    try {
+        const current = getFoundationInfo();
+
+        const fields = [
+            "motto",
+            "vision",
+            "mission",
+            "coreValues",
+            "storyHistory",
+            "approach",
+            "contactInformation"
+        ];
+
+        const updated = {
+            ...current
+        };
+
+        for (const field of fields) {
+            if (typeof req.body?.[field] === "string") {
+                updated[field] = req.body[field].trim();
+            }
+        }
+
+        if (req.body?.whatWeDo && typeof req.body.whatWeDo === "object") {
+            const currentWhatWeDo =
+                current.whatWeDo &&
+                typeof current.whatWeDo === "object"
+                    ? current.whatWeDo
+                    : DEFAULT_FOUNDATION_INFO.whatWeDo;
+
+            updated.whatWeDo = {
+                ...currentWhatWeDo
+            };
+
+            const programmeFields = [
+                "education",
+                "healthcare",
+                "foodNutrition",
+                "basicNeeds",
+                "childWellbeing",
+                "communitySupport"
+            ];
+
+            for (const field of programmeFields) {
+                if (typeof req.body.whatWeDo[field] === "string") {
+                    updated.whatWeDo[field] =
+                        req.body.whatWeDo[field].trim();
+                }
+            }
+        }
+
+        updated.updatedAt = new Date().toISOString();
+
+        saveFoundationInfo(updated);
+
+        return res.json({
+            success: true,
+            message: "Foundation information updated successfully.",
+            foundation: updated
+        });
+    } catch (error) {
+        console.error(
+            "Admin foundation information update error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to update foundation information."
         });
     }
 });
