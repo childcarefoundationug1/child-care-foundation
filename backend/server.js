@@ -4163,7 +4163,6 @@ app.get(
             live: state.live,
             title: state.live ? state.title : "",
             description: state.live ? state.description : "",
-            url: state.live ? state.url : "",
             startedAt: state.live ? state.startedAt : null
         });
     }
@@ -4193,9 +4192,6 @@ app.post(
             const description =
                 String(req.body?.description || "").trim();
 
-            const url =
-                String(req.body?.url || "").trim();
-
             if (!title) {
                 return res.status(400).json({
                     success: false,
@@ -4217,29 +4213,10 @@ app.post(
                 });
             }
 
-            let liveUrl;
-
-            try {
-                liveUrl = new URL(url);
-            } catch (_) {
-                return res.status(400).json({
-                    success: false,
-                    message: "A valid live broadcast URL is required."
-                });
-            }
-
-            if (!["http:", "https:"].includes(liveUrl.protocol)) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Live broadcast URL must use HTTP or HTTPS."
-                });
-            }
-
             const state = {
                 live: true,
                 title,
                 description,
-                url: liveUrl.toString(),
                 startedAt: new Date().toISOString()
             };
 
