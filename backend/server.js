@@ -135,7 +135,6 @@ function getLiveState() {
                 live: false,
                 title: "",
                 description: "",
-                url: "",
                 startedAt: null
             };
         }
@@ -170,7 +169,6 @@ function getLiveState() {
             live: false,
             title: "",
             description: "",
-            url: "",
             startedAt: null
         };
     }
@@ -4266,7 +4264,6 @@ app.post(
                 live: false,
                 title: "",
                 description: "",
-                url: "",
                 startedAt: null,
                 stoppedAt
             };
