@@ -2406,6 +2406,76 @@ app.get("/api/admin/volunteers", requireAdmin, async (req, res) => {
 
 });
 
+/*
+ADMIN: GET ALL CHILD RECORDS
+*/
+
+app.get("/api/admin/children", requireAdmin, async (req, res) => {
+    try {
+        const { data: children, error } = await supabase
+            .from("children")
+            .select(
+                "id, registration_id, full_name, date_of_birth, guardian_name, guardian_phone, location, needs, other_need, photo_path, volunteer_id, status, created_at"
+            )
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error(
+                "Supabase admin children error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to load child records."
+            });
+        }
+
+        const records = await Promise.all(
+            (children || []).map(async (child) => {
+                let photoUrl = null;
+
+                if (child.photo_path) {
+                    const { data: signedPhoto, error: photoError } =
+                        await supabase.storage
+                            .from("child-photos")
+                            .createSignedUrl(child.photo_path, 3600);
+
+                    if (photoError) {
+                        console.error(
+                            "Child photo signed URL error:",
+                            photoError
+                        );
+                    } else {
+                        photoUrl = signedPhoto?.signedUrl || null;
+                    }
+                }
+
+                return {
+                    ...child,
+                    photo_url: photoUrl
+                };
+            })
+        );
+
+        return res.json({
+            success: true,
+            count: records.length,
+            children: records
+        });
+    } catch (error) {
+        console.error(
+            "Admin children error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to load child records."
+        });
+    }
+});
+
 app.get("/api/test-email", async (req, res) => {
     try {
         await sendFoundationEmail(
