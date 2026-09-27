@@ -4217,8 +4217,37 @@ app.delete(
     }
 );
 
-/*
-PUBLIC: GALLERY IMAGES
+/* PUBLIC: VIDEOS */
+app.get("/api/videos", (req, res) => {
+    try {
+        const videos = fs.readdirSync(videosDir)
+            .filter(file => /\.(mp4|mov|3gp|webm|mkv)$/i.test(file))
+            .map(file => {
+                const filePath = path.join(videosDir, file);
+                const stat = fs.statSync(filePath);
+
+                return {
+                    filename: file,
+                    size: stat.size,
+                    url: `/uploads/videos/${file}`,
+                };
+            });
+
+        res.json({
+            success: true,
+            videos,
+        });
+    } catch (error) {
+        console.error("Videos error:", error);
+
+        res.status(500).json({
+            success: false,
+            message: "Unable to load videos.",
+        });
+    }
+});
+
+/* PUBLIC: GALLERY IMAGES
 */
 
 app.get("/api/gallery", (req, res) => {
