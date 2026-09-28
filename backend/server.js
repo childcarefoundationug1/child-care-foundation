@@ -1215,6 +1215,14 @@ app.post("/api/donate/card", async (req, res) => {
             });
         }
 
+        if (numericAmount > 20000000) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Donation amount cannot exceed UGX 20,000,000."
+            });
+        }
+
         const reference = createReference();
 
         addDonation({
