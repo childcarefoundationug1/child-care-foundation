@@ -1,6 +1,50 @@
 const express = require("express");
+const { AccessToken } = require("livekit-server-sdk");
 require("dotenv").config({ path: require("path").join(__dirname, ".env") });
 const PESAPAL_URL = process.env.PESAPAL_URL || "https://pay.pesapal.com/v3";
+
+
+const LIVEKIT_URL = process.env.LIVEKIT_URL || "";
+const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY || "";
+const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET || "";
+
+function liveKitConfigured() {
+    return Boolean(
+        LIVEKIT_URL &&
+        LIVEKIT_API_KEY &&
+        LIVEKIT_API_SECRET
+    );
+}
+
+function createLiveKitToken({
+    identity,
+    roomName,
+    canPublish,
+    canSubscribe
+}) {
+    if (!liveKitConfigured()) {
+        throw new Error("LiveKit is not configured.");
+    }
+
+    const token = new AccessToken(
+        LIVEKIT_API_KEY,
+        LIVEKIT_API_SECRET,
+        {
+            identity,
+            ttl: "1h"
+        }
+    );
+
+    token.addGrant({
+        roomJoin: true,
+        room: roomName,
+        canPublish,
+        canSubscribe
+    });
+
+    return token.toJwt();
+}
+
 
 const FLUTTERWAVE_CARD_CURRENCIES = new Set([
     "GBP",
@@ -156,6 +200,9 @@ function getLiveState() {
                 : "",
             url: typeof state.url === "string"
                 ? state.url
+                : "",
+            roomName: typeof state.roomName === "string"
+                ? state.roomName
                 : "",
             startedAt: state.startedAt || null
         };
@@ -4177,8 +4224,103 @@ app.get(
             live: state.live,
             title: state.live ? state.title : "",
             description: state.live ? state.description : "",
+            roomName: state.live ? state.roomName : "",
             startedAt: state.live ? state.startedAt : null
         });
+    }
+);
+
+
+/*
+LIVEKIT: ADMIN BROADCASTER TOKEN
+*/
+app.post(
+    "/api/admin/live/token",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const currentState = getLiveState();
+
+            if (!currentState.live) {
+                return res.status(409).json({
+                    success: false,
+                    message: "CCF Live is currently offline."
+                });
+            }
+
+            const roomName = "ccf-live";
+
+            const token = createLiveKitToken({
+                identity: `ccf-admin-${Date.now()}`,
+                roomName,
+                canPublish: true,
+                canSubscribe: true
+            });
+
+            return res.json({
+                success: true,
+                livekitUrl: LIVEKIT_URL,
+                roomName,
+                token
+            });
+        } catch (error) {
+            console.error(
+                "LiveKit admin token error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to create LiveKit broadcaster token."
+            });
+        }
+    }
+);
+
+
+/*
+LIVEKIT: PUBLIC VIEWER TOKEN
+*/
+app.post(
+    "/api/live/viewer-token",
+    (req, res) => {
+        try {
+            const currentState = getLiveState();
+
+            if (!currentState.live) {
+                return res.status(409).json({
+                    success: false,
+                    message:
+                        "CCF Live is currently offline. Please check back soon."
+                });
+            }
+
+            const roomName = "ccf-live";
+
+            const token = createLiveKitToken({
+                identity: `ccf-viewer-${Date.now()}`,
+                roomName,
+                canPublish: false,
+                canSubscribe: true
+            });
+
+            return res.json({
+                success: true,
+                livekitUrl: LIVEKIT_URL,
+                roomName,
+                token
+            });
+        } catch (error) {
+            console.error(
+                "LiveKit viewer token error:",
+                error
+            );
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to create LiveKit viewer token."
+            });
+        }
     }
 );
 
@@ -4231,6 +4373,7 @@ app.post(
                 live: true,
                 title,
                 description,
+                roomName: "ccf-live",
                 startedAt: new Date().toISOString()
             };
 
@@ -4280,6 +4423,7 @@ app.post(
                 live: false,
                 title: "",
                 description: "",
+                roomName: "",
                 startedAt: null,
                 stoppedAt
             };
