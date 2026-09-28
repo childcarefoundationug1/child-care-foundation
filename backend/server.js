@@ -1260,6 +1260,16 @@ app.post("/api/donate/card", async (req, res) => {
 
         const data = await result.json();
 
+        console.error("PESAPAL SUBMIT RESPONSE:", JSON.stringify({
+            http_status: result.status,
+            ok: result.ok,
+            status: data.status ?? null,
+            message: data.message ?? null,
+            error: data.error ?? null,
+            order_tracking_id: data.order_tracking_id ?? null,
+            redirect_url_present: !!data.redirect_url
+        }));
+
         if (
             !result.ok ||
             !data.redirect_url
