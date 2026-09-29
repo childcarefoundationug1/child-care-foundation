@@ -1262,11 +1262,18 @@ app.post("/api/donate/card", async (req, res) => {
             });
         }
 
-        if (numericAmount > 20000000) {
+        const maximumDonation =
+            selectedCurrency === "USD"
+                ? 5000
+                : 20000000;
+
+        if (numericAmount > maximumDonation) {
             return res.status(400).json({
                 success: false,
                 message:
-                    "Donation amount cannot exceed UGX 20,000,000."
+                    selectedCurrency === "USD"
+                        ? "Donation amount cannot exceed USD 5,000."
+                        : "Donation amount cannot exceed UGX 20,000,000."
             });
         }
 
