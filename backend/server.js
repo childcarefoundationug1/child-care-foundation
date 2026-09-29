@@ -1375,6 +1375,7 @@ app.post("/api/donate/card", async (req, res) => {
         res.status(500).json({
             success: false,
             message:
+                error?.message ||
                 "Unable to start payment."
         });
     }
