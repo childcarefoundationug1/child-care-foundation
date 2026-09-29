@@ -1329,7 +1329,21 @@ app.post("/api/donate/card", async (req, res) => {
             !result.ok ||
             !data.redirect_url
         ) {
+            const pesapalErrorCode =
+                data.error?.code || "";
+
+            if (
+                pesapalErrorCode ===
+                "amount_exceeds_default_limit"
+            ) {
+                throw new Error(
+                    "This donation amount exceeds the current online payment limit. " +
+                    "Please enter a smaller amount or contact Child Care Foundation."
+                );
+            }
+
             throw new Error(
+                data.error?.message ||
                 data.message ||
                 "Pesapal checkout URL missing."
             );
