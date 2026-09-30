@@ -3788,7 +3788,47 @@ const { ensureVolunteerDocumentsBucket } =
 
 ensureVolunteerDocumentsBucket()
     .then(() => {
-        app.listen(PORT, () => {
+        
+// --- LiveKit Token Generation Endpoint ---
+app.get('/api/live/token', async (req, res) => {
+  try {
+    const roomName = req.query.room || 'ccf-official-live';
+    const participantName = req.query.identity || `admin_${Date.now()}`;
+
+    const apiKey = process.env.LIVEKIT_API_KEY;
+    const apiSecret = process.env.LIVEKIT_API_SECRET;
+    const wsUrl = process.env.LIVEKIT_URL;
+
+    if (!apiKey || !apiSecret || !wsUrl) {
+      return res.status(500).json({ error: 'LiveKit credentials missing in server environment.' });
+    }
+
+    const at = new AccessToken(apiKey, apiSecret, {
+      identity: participantName,
+      ttl: '2h',
+    });
+
+    at.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: true,
+      canSubscribe: true,
+    });
+
+    const token = await at.toJwt();
+
+    res.json({
+      token: token,
+      url: wsUrl,
+      room: roomName,
+    });
+  } catch (error) {
+    console.error('Error generating LiveKit token:', error);
+    res.status(500).json({ error: 'Failed to generate token' });
+  }
+});
+
+app.listen(PORT, () => {
             console.log(
                 `Child Care Foundation API running on port ${PORT}`
             );
