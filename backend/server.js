@@ -4260,7 +4260,7 @@ LIVEKIT: ADMIN BROADCASTER TOKEN
 app.post(
     "/api/admin/live/token",
     requireAdmin,
-    (req, res) => {
+    async (req, res) => {
         try {
             const currentState = getLiveState();
 
@@ -4273,7 +4273,7 @@ app.post(
 
             const roomName = "ccf-live";
 
-            const token = createLiveKitToken({
+            const token = await createLiveKitToken({
                 identity: `ccf-admin-${Date.now()}`,
                 roomName,
                 canPublish: true,
@@ -4306,7 +4306,7 @@ LIVEKIT: PUBLIC VIEWER TOKEN
 */
 app.post(
     "/api/live/viewer-token",
-    (req, res) => {
+    async (req, res) => {
         try {
             const currentState = getLiveState();
 
@@ -4320,7 +4320,7 @@ app.post(
 
             const roomName = "ccf-live";
 
-            const token = createLiveKitToken({
+            const token = await createLiveKitToken({
                 identity: `ccf-viewer-${Date.now()}`,
                 roomName,
                 canPublish: false,
