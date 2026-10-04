@@ -3819,6 +3819,138 @@ app.delete("/api/admin/messages/:id", requireAdmin, (req, res) => {
 
 
 
+/* ==========================================================
+   PUBLIC: CCF AI ASSISTANT
+   ========================================================== */
+
+app.post("/api/ccf-chat", async (req, res) => {
+    try {
+        const message = String(req.body?.message || "").trim();
+
+        if (!message) {
+            return res.status(400).json({
+                success: false,
+                message: "Please enter a message."
+            });
+        }
+
+        if (message.length > 2000) {
+            return res.status(400).json({
+                success: false,
+                message: "Message is too long."
+            });
+        }
+
+        const apiKey = process.env.OPENAI_API_KEY;
+
+        if (!apiKey) {
+            return res.status(503).json({
+                success: false,
+                message: "CCF AI assistant is not configured yet."
+            });
+        }
+
+        const instructions = `
+You are the official AI assistant for Child Care Foundation Uganda (CCF).
+
+Your job is to answer the user's actual question clearly, directly and helpfully,
+while representing CCF accurately.
+
+CCF KNOWLEDGE:
+- Name: Child Care Foundation Uganda (CCF)
+- Motto: Every Child Deserves Hope
+- Theme: Building Brighter Tomorrows
+- CCF supports vulnerable children and families.
+- Main areas of work:
+  1. Education
+  2. Healthcare
+  3. Food & nutrition
+  4. Basic needs
+- CCF works with communities, partners, donors and volunteers.
+- Volunteer information should explain how people can get involved with CCF.
+- Donation information should explain CCF donation/support options when known.
+- Child registration information should explain the public registration process
+  when known, but never expose private child records.
+- Official contact email: childcarefoundation.support@gmail.com
+- Official Facebook and Instagram handle: childcarefoundationug1
+- CCF history, current programs and current events should only be stated when
+  that information has been supplied to the assistant or is otherwise available
+  through the CCF system.
+
+IMPORTANT RULES:
+1. Answer the exact question the user asks.
+2. Do not give generic answers when the question is specific.
+3. Do not invent facts, programs, events, dates, addresses, telephone numbers,
+   prices, staff names or policies.
+4. If CCF information is not available, clearly say that you do not have that
+   information and direct the user to CCF's official contact.
+5. Never reveal private child information, volunteer records, admin information,
+   passwords, API keys, payment credentials or other confidential information.
+6. Do not claim to be a human employee.
+7. Be warm, professional and concise.
+8. When appropriate, encourage the user to contact CCF directly for official
+   confirmation.
+`;
+
+        const model = process.env.OPENAI_MODEL || "gpt-6-luna";
+
+        const response = await fetch(
+            "https://api.openai.com/v1/responses",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model,
+                    instructions,
+                    input: message
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("CCF AI error:", data);
+
+            return res.status(502).json({
+                success: false,
+                message: "The CCF AI assistant is temporarily unavailable."
+            });
+        }
+
+        const reply =
+            data.output_text ||
+            data.output?.flatMap(item => item.content || [])
+                ?.map(item => item.text || "")
+                ?.join("")
+                ?.trim();
+
+        if (!reply) {
+            return res.status(502).json({
+                success: false,
+                message: "The CCF AI assistant did not return a response."
+            });
+        }
+
+        return res.json({
+            success: true,
+            reply
+        });
+
+    } catch (error) {
+        console.error("CCF AI assistant error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to connect to the CCF AI assistant."
+        });
+    }
+});
+
+
 const { ensureVolunteerDocumentsBucket } =
     require("./storage-setup");
 
