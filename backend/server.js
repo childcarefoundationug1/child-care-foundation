@@ -1934,6 +1934,42 @@ START SERVER
 ADMIN: GET ALL DONATIONS
 */
 
+app.get("/api/donation-progress", (req, res) => {
+    try {
+        const donations = readDonations();
+
+        const targetAmount = 300000000;
+
+        const completedAmount = donations
+            .filter((donation) =>
+                String(donation.status || "").toLowerCase() === "completed"
+            )
+            .reduce((total, donation) => {
+                const amount = Number(donation.amount);
+                return total + (Number.isFinite(amount) ? amount : 0);
+            }, 0);
+
+        const percentage = Math.min(
+            100,
+            Math.max(0, (completedAmount / targetAmount) * 100)
+        );
+
+        return res.json({
+            success: true,
+            targetAmount,
+            completedAmount,
+            percentage: Number(percentage.toFixed(2))
+        });
+    } catch (error) {
+        console.error("Donation progress error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to load donation progress."
+        });
+    }
+});
+
 app.get("/api/admin/donations", requireAdmin, (req, res) => {
 
 console.log("GET /api/admin/donations", req.session);
