@@ -433,7 +433,11 @@ const {
 
     updateDonation,
 
-    readDonations
+    readDonations,
+
+    readCampaign,
+
+    saveCampaign
 
 } = require("./database");
 
@@ -1938,7 +1942,8 @@ app.get("/api/donation-progress", (req, res) => {
     try {
         const donations = readDonations();
 
-        const targetAmount = 300000000;
+        const campaign = readCampaign();
+        const targetAmount = Number(campaign.targetAmount) || 30000000;
 
         const completedAmount = donations
             .filter((donation) =>
@@ -1958,7 +1963,10 @@ app.get("/api/donation-progress", (req, res) => {
             success: true,
             targetAmount,
             completedAmount,
-            percentage: Number(percentage.toFixed(2))
+            percentage: Number(percentage.toFixed(2)),
+            campaign: { title: campaign.title, reason: campaign.reason },
+            completed: percentage >= 100,
+            thankYouMessage: percentage >= 100 ? "Thank you sincerely to everyone who supported Child Care Foundation. Together, we are making a real difference." : null
         });
     } catch (error) {
         console.error("Donation progress error:", error);
@@ -1968,6 +1976,32 @@ app.get("/api/donation-progress", (req, res) => {
             message: "Unable to load donation progress."
         });
     }
+});
+
+app.get("/api/admin/campaign", requireAdmin, (req, res) => {
+    return res.json({ success: true, campaign: readCampaign() });
+});
+
+app.put("/api/admin/campaign", requireAdmin, (req, res) => {
+    const targetAmount = Number(req.body.targetAmount);
+    const reason = String(req.body.reason || "").trim();
+    const title = String(req.body.title || "Support Child Care Foundation").trim();
+
+    if (!Number.isFinite(targetAmount) || targetAmount <= 0 || !reason) {
+        return res.status(400).json({
+            success: false,
+            message: "Valid target amount and reason are required."
+        });
+    }
+
+    const campaign = saveCampaign({
+        title,
+        reason,
+        targetAmount,
+        active: true
+    });
+
+    return res.json({ success: true, campaign });
 });
 
 app.get("/api/admin/donations", requireAdmin, (req, res) => {

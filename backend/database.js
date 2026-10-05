@@ -163,3 +163,51 @@ module.exports = {
     updateDonation
 
 };
+
+const campaignFile = path.join(uploadsDir, "campaign.json");
+
+function readCampaign() {
+    try {
+        if (!fs.existsSync(campaignFile)) {
+            const initial = {
+                title: "Support Child Care Foundation",
+                reason: "Help us provide essential support to vulnerable children and families.",
+                targetAmount: 30000000,
+                active: true
+            };
+
+            fs.writeFileSync(
+                campaignFile,
+                JSON.stringify(initial, null, 2),
+                "utf8"
+            );
+
+            return initial;
+        }
+
+        return JSON.parse(
+            fs.readFileSync(campaignFile, "utf8")
+        );
+    } catch (error) {
+        console.error("Campaign read error:", error);
+        return {
+            title: "Support Child Care Foundation",
+            reason: "",
+            targetAmount: 30000000,
+            active: true
+        };
+    }
+}
+
+function saveCampaign(campaign) {
+    fs.writeFileSync(
+        campaignFile,
+        JSON.stringify(campaign, null, 2),
+        "utf8"
+    );
+
+    return campaign;
+}
+
+module.exports.readCampaign = readCampaign;
+module.exports.saveCampaign = saveCampaign;
