@@ -323,128 +323,6 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
 
 </div>
 
-
-
-<!-- WHATSAPP VERIFICATION REQUESTS -->
-
-<div class="section">
-
-    <div class="section-header">
-        <h2>💬 WhatsApp Verification Requests</h2>
-
-        <button
-            class="refresh"
-            onclick="loadWhatsAppVerificationRequests()"
-        >
-            🔄 Refresh Requests
-        </button>
-    </div>
-
-    <div class="stats">
-
-        <div class="stat-card">
-            <h3>Total Requests</h3>
-            <p id="totalWhatsAppRequests">0</p>
-        </div>
-
-        <div class="stat-card">
-            <h3>Pending</h3>
-            <p id="pendingWhatsAppRequests">0</p>
-        </div>
-
-    </div>
-
-    <div style="overflow-x:auto;">
-
-        <table>
-
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Reason</th>
-                    <th>Requested</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-
-            <tbody id="whatsappVerificationRequestsTable">
-
-                <tr>
-                    <td colspan="6">
-                        Loading WhatsApp verification requests...
-                    </td>
-                </tr>
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-</div>
-
-<!-- PHONE VERIFICATION REQUESTS -->
-
-<div class="section">
-
-    <div class="section-header">
-        <h2>📞 Phone Verification Requests</h2>
-
-        <button
-            class="refresh"
-            onclick="loadPhoneVerificationRequests()"
-        >
-            🔄 Refresh Requests
-        </button>
-    </div>
-
-    <div class="stats">
-
-        <div class="stat-card">
-            <h3>Total Requests</h3>
-            <p id="totalPhoneRequests">0</p>
-        </div>
-
-        <div class="stat-card">
-            <h3>Pending</h3>
-            <p id="pendingPhoneRequests">0</p>
-        </div>
-
-    </div>
-
-    <div style="overflow-x:auto;">
-
-        <table>
-
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Reason</th>
-                    <th>Requested</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-
-            <tbody id="phoneVerificationRequestsTable">
-
-                <tr>
-                    <td colspan="6">
-                        Loading phone verification requests...
-                    </td>
-                </tr>
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-</div>
-
 <!-- VOLUNTEER MANAGEMENT -->
 
 <div class="section">
@@ -566,143 +444,12 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
 
 </div>
 
-<!-- WHAT WE DO IMAGE MANAGEMENT -->
-
-<div class="section" style="margin-top: 30px;">
-
-    <div class="section-header">
-        <h2>What We Do Images</h2>
-    </div>
-
-    <div class="card">
-
-        <p>
-            Upload or replace the images displayed in the
-            What We Do section on the homepage.
-        </p>
-
-        <div
-            style="
-                display:grid;
-                grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-                gap:20px;
-                margin-top:20px;
-            "
-        >
-
-            <div>
-                <h3>📚 Education</h3>
-                <form class="whatWeDoUploadForm" data-category="education">
-                    <input type="file" accept="image/*" required>
-                    <br><br>
-                    <button type="submit" class="refresh">
-                        📤 Upload Education Image
-                    </button>
-                </form>
-                <div class="whatWeDoMessage" id="whatWeDoMessageEducation"></div>
-            </div>
-
-            <div>
-                <h3>🏥 Healthcare</h3>
-                <form class="whatWeDoUploadForm" data-category="healthcare">
-                    <input type="file" accept="image/*" required>
-                    <br><br>
-                    <button type="submit" class="refresh">
-                        📤 Upload Healthcare Image
-                    </button>
-                </form>
-                <div class="whatWeDoMessage" id="whatWeDoMessageHealthcare"></div>
-            </div>
-
-            <div>
-                <h3>🍲 Food & Nutrition</h3>
-                <form class="whatWeDoUploadForm" data-category="food-nutrition">
-                    <input type="file" accept="image/*" required>
-                    <br><br>
-                    <button type="submit" class="refresh">
-                        📤 Upload Food Image
-                    </button>
-                </form>
-                <div class="whatWeDoMessage" id="whatWeDoMessageFoodNutrition"></div>
-            </div>
-
-            <div>
-                <h3>👕 Basic Needs</h3>
-                <form class="whatWeDoUploadForm" data-category="basic-needs">
-                    <input type="file" accept="image/*" required>
-                    <br><br>
-                    <button type="submit" class="refresh">
-                        📤 Upload Basic Needs Image
-                    </button>
-                </form>
-                <div class="whatWeDoMessage" id="whatWeDoMessageBasicNeeds"></div>
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
 <!-- GALLERY MANAGEMENT -->
 
 <div class="section" style="margin-top: 30px;">
 
     <div class="section-header">
-
-<h2>Impact Images</h2>
-
-<div class="admin-section">
-    <p>Upload or replace the six images shown under <strong>Our Impact in Pictures</strong>.</p>
-
-    <div class="upload-grid">
-
-        <form class="impactUploadForm" data-category="education">
-            <h3>Education</h3>
-            <input type="file" name="image" accept="image/*" required>
-            <button type="submit">Upload Education Image</button>
-            <div class="impact-upload-message"></div>
-        </form>
-
-        <form class="impactUploadForm" data-category="food-nutrition">
-            <h3>Food &amp; Nutrition</h3>
-            <input type="file" name="image" accept="image/*" required>
-            <button type="submit">Upload Food &amp; Nutrition Image</button>
-            <div class="impact-upload-message"></div>
-        </form>
-
-        <form class="impactUploadForm" data-category="healthcare">
-            <h3>Healthcare</h3>
-            <input type="file" name="image" accept="image/*" required>
-            <button type="submit">Upload Healthcare Image</button>
-            <div class="impact-upload-message"></div>
-        </form>
-
-        <form class="impactUploadForm" data-category="community-outreach">
-            <h3>Community Outreach</h3>
-            <input type="file" name="image" accept="image/*" required>
-            <button type="submit">Upload Community Outreach Image</button>
-            <div class="impact-upload-message"></div>
-        </form>
-
-        <form class="impactUploadForm" data-category="child-support">
-            <h3>Child Support</h3>
-            <input type="file" name="image" accept="image/*" required>
-            <button type="submit">Upload Child Support Image</button>
-            <div class="impact-upload-message"></div>
-        </form>
-
-        <form class="impactUploadForm" data-category="hope-future">
-            <h3>Hope &amp; Future</h3>
-            <input type="file" name="image" accept="image/*" required>
-            <button type="submit">Upload Hope &amp; Future Image</button>
-            <div class="impact-upload-message"></div>
-        </form>
-
-    </div>
-</div>
-
-<h2>Gallery Management</h2>
+        <h2>Gallery Management</h2>
     </div>
 
     <div class="card">
@@ -757,6 +504,192 @@ alt="Child Care Foundation logo"> Child Care Foundation</h1>
     </div>
 
 </div>
+
+
+<!-- EVENTS MANAGEMENT -->
+
+<div class="section" style="margin-top:30px;">
+
+    <div class="section-header">
+        <h2>Events Management</h2>
+    </div>
+
+    <div class="card">
+
+        <h3>Add New Event</h3>
+
+        <p>
+            Add upcoming Child Care Foundation activities, programmes,
+            outreach events and community events.
+        </p>
+
+        <form id="eventUploadForm">
+
+            <input
+                type="text"
+                id="eventTitle"
+                name="title"
+                placeholder="Event title"
+                maxlength="150"
+                required
+                style="width:100%;padding:12px;margin-bottom:12px;"
+            >
+
+            <input
+                type="date"
+                id="eventDate"
+                name="date"
+                required
+                style="width:100%;padding:12px;margin-bottom:12px;"
+            >
+
+            <input
+                type="text"
+                id="eventLocation"
+                name="location"
+                placeholder="Event location"
+                maxlength="200"
+                required
+                style="width:100%;padding:12px;margin-bottom:12px;"
+            >
+
+            <textarea
+                id="eventDescription"
+                name="description"
+                placeholder="Describe the event..."
+                maxlength="2000"
+                required
+                rows="5"
+                style="width:100%;padding:12px;margin-bottom:12px;"
+            ></textarea>
+
+            <label style="display:block;margin-bottom:8px;">
+                Event image (optional)
+            </label>
+
+            <input
+                type="file"
+                id="eventImage"
+                name="image"
+                accept="image/*"
+                style="margin-bottom:15px;"
+            >
+
+            <br>
+
+            <button
+                type="submit"
+                class="refresh"
+            >
+                📅 Add Event
+            </button>
+
+        </form>
+
+        <div id="eventMessage"></div>
+
+        <hr>
+
+        <h3>Current Events</h3>
+
+        <div id="eventsLoading">
+            Loading events...
+        </div>
+
+        <div
+            id="eventsGrid"
+            style="
+                display:grid;
+                grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+                gap:20px;
+                margin-top:20px;
+            "
+        ></div>
+
+    </div>
+
+</div>
+
+<!-- CCF STORIES THAT CREATE HOPE -->
+
+<div class="section" style="margin-top:30px;">
+    <div class="section-header">
+        <h2>CCF Stories That Create Hope</h2>
+    </div>
+
+    <div class="card">
+
+        <h3>Upload New Story</h3>
+
+        <p>
+            Stories contain a video, a title and a description.
+            Only videos are allowed in this section.
+        </p>
+
+        <form id="storyUploadForm">
+
+            <input
+                type="text"
+                id="storyTitle"
+                name="title"
+                placeholder="Story title"
+                maxlength="150"
+                required
+                style="width:100%;padding:12px;margin-bottom:12px;"
+            >
+
+            <textarea
+                id="storyDescription"
+                name="description"
+                placeholder="Describe this story and the hope it creates..."
+                maxlength="2000"
+                required
+                rows="5"
+                style="width:100%;padding:12px;margin-bottom:12px;"
+            ></textarea>
+
+            <input
+                type="file"
+                id="storyVideo"
+                name="video"
+                accept="video/*"
+                required
+            >
+
+            <br><br>
+
+            <button
+                type="submit"
+                class="refresh"
+            >
+                🎥 Upload Story
+            </button>
+
+        </form>
+
+        <div id="storyMessage"></div>
+
+        <hr>
+
+        <h3>Current Stories</h3>
+
+        <div id="storiesLoading">
+            Loading CCF Stories...
+        </div>
+
+        <div
+            id="storiesGrid"
+            style="
+                display:grid;
+                grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+                gap:20px;
+                margin-top:20px;
+            "
+        ></div>
+
+    </div>
+</div>
+
 <script>
 
 function getAdminToken() {
@@ -1156,427 +1089,6 @@ async function updateVolunteerStatus(id, status) {
 
     }
 
-}
-
-
-
-async function loadWhatsAppVerificationRequests() {
-    try {
-        const response = await authFetch(
-            `${API_URL}/api/admin/whatsapp-verification-requests`,
-            {
-                credentials: "include"
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message ||
-                "Unable to load WhatsApp verification requests."
-            );
-        }
-
-        const requests = data.requests || [];
-
-        document.getElementById(
-            "totalWhatsAppRequests"
-        ).textContent = requests.length;
-
-        document.getElementById(
-            "pendingWhatsAppRequests"
-        ).textContent =
-            requests.filter(
-                request => request.status === "pending"
-            ).length;
-
-        const table =
-            document.getElementById(
-                "whatsappVerificationRequestsTable"
-            );
-
-        if (requests.length === 0) {
-            table.innerHTML = `
-                <tr>
-                    <td colspan="6">
-                        No WhatsApp verification requests found.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        table.innerHTML = requests
-            .slice()
-            .reverse()
-            .map(request => {
-
-                const requested =
-                    request.requestedAt
-                        ? new Date(
-                            request.requestedAt
-                        ).toLocaleString()
-                        : "-";
-
-                const status =
-                    request.status || "pending";
-
-                let actions = "-";
-
-                if (status === "pending") {
-                    actions = `
-                        <button
-                            class="verify"
-                            onclick="approveWhatsAppVerificationRequest('${request.id}')"
-                        >
-                            ✅ Approve
-                        </button>
-
-                        <button
-                            class="delete"
-                            onclick="rejectWhatsAppVerificationRequest('${request.id}')"
-                        >
-                            ❌ Reject
-                        </button>
-                    `;
-                }
-
-                return `
-                    <tr>
-                        <td>${request.name || "-"}</td>
-                        <td>${request.phone || "-"}</td>
-                        <td>${request.reason || "-"}</td>
-                        <td>${requested}</td>
-                        <td>${status}</td>
-                        <td>${actions}</td>
-                    </tr>
-                `;
-            })
-            .join("");
-
-    } catch (error) {
-
-        console.error(
-            "Load WhatsApp verification requests error:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Unable to load WhatsApp verification requests."
-        );
-    }
-}
-
-async function approveWhatsAppVerificationRequest(id) {
-
-    if (
-        !confirm(
-            "Approve this WhatsApp verification request?"
-        )
-    ) {
-        return;
-    }
-
-    try {
-
-        const response = await authFetch(
-            `${API_URL}/api/admin/whatsapp-verification-requests/${id}/approve`,
-            {
-                method: "PATCH",
-                credentials: "include"
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message ||
-                "Unable to approve the WhatsApp request."
-            );
-        }
-
-        alert(
-            "WhatsApp verification request approved successfully."
-        );
-
-        await loadWhatsAppVerificationRequests();
-
-    } catch (error) {
-
-        console.error(
-            "Approve WhatsApp verification request error:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Unable to approve the WhatsApp request."
-        );
-    }
-}
-
-async function rejectWhatsAppVerificationRequest(id) {
-
-    if (
-        !confirm(
-            "Reject this WhatsApp verification request?"
-        )
-    ) {
-        return;
-    }
-
-    try {
-
-        const response = await authFetch(
-            `${API_URL}/api/admin/whatsapp-verification-requests/${id}/reject`,
-            {
-                method: "PATCH",
-                credentials: "include"
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message ||
-                "Unable to reject the WhatsApp request."
-            );
-        }
-
-        alert(
-            "WhatsApp verification request rejected."
-        );
-
-        await loadWhatsAppVerificationRequests();
-
-    } catch (error) {
-
-        console.error(
-            "Reject WhatsApp verification request error:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Unable to reject the WhatsApp request."
-        );
-    }
-}
-
-async function loadPhoneVerificationRequests() {
-    try {
-        const response = await authFetch(
-            `${API_URL}/api/admin/phone-verification-requests`,
-            {
-                credentials: "include"
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message ||
-                "Unable to load phone verification requests."
-            );
-        }
-
-        const requests = data.requests || [];
-
-        document.getElementById(
-            "totalPhoneRequests"
-        ).textContent = requests.length;
-
-        document.getElementById(
-            "pendingPhoneRequests"
-        ).textContent =
-            requests.filter(
-                request => request.status === "pending"
-            ).length;
-
-        const table =
-            document.getElementById(
-                "phoneVerificationRequestsTable"
-            );
-
-        if (requests.length === 0) {
-            table.innerHTML = `
-                <tr>
-                    <td colspan="6">
-                        No phone verification requests found.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        table.innerHTML = requests
-            .slice()
-            .reverse()
-            .map(request => {
-
-                const requested =
-                    request.requestedAt
-                        ? new Date(
-                            request.requestedAt
-                        ).toLocaleString()
-                        : "-";
-
-                const status =
-                    request.status || "pending";
-
-                let actions = "-";
-
-                if (status === "pending") {
-                    actions = `
-                        <button
-                            class="verify"
-                            onclick="approvePhoneVerificationRequest('${request.id}')"
-                        >
-                            ✅ Approve
-                        </button>
-
-                        <button
-                            class="delete"
-                            onclick="rejectPhoneVerificationRequest('${request.id}')"
-                        >
-                            ❌ Reject
-                        </button>
-                    `;
-                }
-
-                return `
-                    <tr>
-                        <td>${request.name || "-"}</td>
-
-                        <td>${request.phone || "-"}</td>
-
-                        <td>${request.reason || "-"}</td>
-
-                        <td>${requested}</td>
-
-                        <td>${status}</td>
-
-                        <td>${actions}</td>
-                    </tr>
-                `;
-            })
-            .join("");
-
-    } catch (error) {
-
-        console.error(
-            "Load phone verification requests error:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Unable to load phone verification requests."
-        );
-    }
-}
-
-async function approvePhoneVerificationRequest(id) {
-
-    if (
-        !confirm(
-            "Approve this phone verification request?"
-        )
-    ) {
-        return;
-    }
-
-    try {
-
-        const response = await authFetch(
-            `${API_URL}/api/admin/phone-verification-requests/${id}/approve`,
-            {
-                method: "PATCH",
-                credentials: "include"
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message ||
-                "Unable to approve the request."
-            );
-        }
-
-        alert(
-            "Phone verification request approved successfully."
-        );
-
-        await loadPhoneVerificationRequests();
-
-    } catch (error) {
-
-        console.error(
-            "Approve phone verification request error:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Unable to approve the request."
-        );
-    }
-}
-
-async function rejectPhoneVerificationRequest(id) {
-
-    if (
-        !confirm(
-            "Reject this phone verification request?"
-        )
-    ) {
-        return;
-    }
-
-    try {
-
-        const response = await authFetch(
-            `${API_URL}/api/admin/phone-verification-requests/${id}/reject`,
-            {
-                method: "PATCH",
-                credentials: "include"
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message ||
-                "Unable to reject the request."
-            );
-        }
-
-        alert(
-            "Phone verification request rejected."
-        );
-
-        await loadPhoneVerificationRequests();
-
-    } catch (error) {
-
-        console.error(
-            "Reject phone verification request error:",
-            error
-        );
-
-        alert(
-            error.message ||
-            "Unable to reject the request."
-        );
-    }
 }
 
 async function loadMessages() {
@@ -2243,100 +1755,719 @@ async function deleteGalleryImage(filename) {
 }
 
 
-async function uploadWhatWeDoImage(form) {
 
-    const category = form.dataset.category;
-    const input = form.querySelector('input[type="file"]');
-    const message = form.parentElement.querySelector(".whatWeDoMessage");
+async function loadEvents() {
 
-    const file = input.files[0];
+    const grid =
+        document.getElementById("eventsGrid");
 
-    if (!file) {
-        message.textContent = "Please select an image.";
-        message.style.color = "red";
+    const loading =
+        document.getElementById("eventsLoading");
+
+    if (!grid || !loading) {
         return;
     }
 
-    if (!file.type.startsWith("image/")) {
-        message.textContent = "Only image files are allowed.";
-        message.style.color = "red";
-        input.value = "";
-        return;
-    }
+    loading.textContent =
+        "Loading events...";
 
-    if (file.size > 10 * 1024 * 1024) {
-        message.textContent = "Image must be 10 MB or smaller.";
-        message.style.color = "red";
-        input.value = "";
-        return;
-    }
-
-    const formData = new FormData();
-
-    formData.append("category", category);
-    formData.append("image", file);
-
-    message.textContent = "Uploading image...";
-    message.style.color = "#087a42";
+    grid.innerHTML = "";
 
     try {
 
-        const response = await authFetch(
-            `${API_URL}/api/admin/what-we-do/upload`,
-            {
-                method: "POST",
-                credentials: "include",
-                body: formData
-            }
-        );
+        const response =
+            await authFetch(
+                `${API_URL}/api/admin/events`,
+                {
+                    credentials: "include"
+                }
+            );
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
         if (!response.ok || !data.success) {
             throw new Error(
-                data.message || "Unable to upload image."
+                data.message ||
+                "Unable to load events."
             );
         }
 
-        message.textContent =
-            "✅ Image uploaded successfully.";
+        const events =
+            Array.isArray(data.events)
+                ? data.events
+                : [];
 
-        message.style.color = "#087a42";
+        loading.textContent =
+            events.length
+                ? `${events.length} event(s).`
+                : "No events found.";
 
-        input.value = "";
+        events.forEach(event => {
+
+            const card =
+                document.createElement("div");
+
+            card.style.cssText = `
+                border:1px solid #ddd;
+                border-radius:10px;
+                padding:15px;
+                background:#fff;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);
+            `;
+
+            if (event.image) {
+
+                const img =
+                    document.createElement("img");
+
+                img.src =
+                    `${API_URL}${event.image}`;
+
+                img.alt =
+                    event.title || "Event image";
+
+                img.style.cssText = `
+                    width:100%;
+                    height:160px;
+                    object-fit:cover;
+                    border-radius:8px;
+                    display:block;
+                    margin-bottom:12px;
+                `;
+
+                img.onerror = function () {
+                    this.style.display = "none";
+                };
+
+                card.appendChild(img);
+            }
+
+            const title =
+                document.createElement("h4");
+
+            title.textContent =
+                event.title || "Untitled event";
+
+            title.style.margin =
+                "0 0 8px 0";
+
+            card.appendChild(title);
+
+            const date =
+                document.createElement("div");
+
+            date.textContent =
+                `📅 ${event.date || "Date not set"}`;
+
+            date.style.cssText = `
+                color:#555;
+                font-size:13px;
+                margin-bottom:5px;
+            `;
+
+            card.appendChild(date);
+
+            const location =
+                document.createElement("div");
+
+            location.textContent =
+                `📍 ${event.location || "Location not set"}`;
+
+            location.style.cssText = `
+                color:#555;
+                font-size:13px;
+                margin-bottom:10px;
+            `;
+
+            card.appendChild(location);
+
+            const description =
+                document.createElement("p");
+
+            description.textContent =
+                event.description || "";
+
+            description.style.cssText = `
+                color:#555;
+                font-size:14px;
+                line-height:1.5;
+                margin:0 0 15px 0;
+            `;
+
+            card.appendChild(description);
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.type = "button";
+
+            deleteButton.textContent =
+                "🗑️ Delete Event";
+
+            deleteButton.style.cssText = `
+                width:100%;
+                padding:10px;
+                border:0;
+                border-radius:6px;
+                background:#c62828;
+                color:white;
+                cursor:pointer;
+                font-weight:bold;
+            `;
+
+            deleteButton.addEventListener(
+                "click",
+                () => deleteEvent(event.id)
+            );
+
+            card.appendChild(deleteButton);
+
+            grid.appendChild(card);
+        });
 
     } catch (error) {
 
         console.error(
-            "What We Do upload error:",
+            "Events loading error:",
+            error
+        );
+
+        loading.textContent =
+            error.message ||
+            "Unable to load events.";
+
+        loading.style.color = "red";
+    }
+}
+
+
+async function deleteEvent(id) {
+
+    if (!id) {
+        return;
+    }
+
+    const confirmed =
+        window.confirm(
+            "Delete this event?\n\nThis action cannot be undone."
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    const message =
+        document.getElementById("eventMessage");
+
+    message.textContent =
+        "Deleting event...";
+
+    message.style.color = "#087a42";
+
+    try {
+
+        const response =
+            await authFetch(
+                `${API_URL}/api/admin/events/${encodeURIComponent(id)}`,
+                {
+                    method: "DELETE",
+                    credentials: "include"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to delete event."
+            );
+        }
+
+        message.textContent =
+            "✅ Event deleted successfully.";
+
+        message.style.color = "#087a42";
+
+        await loadEvents();
+
+    } catch (error) {
+
+        console.error(
+            "Event delete error:",
             error
         );
 
         message.textContent =
-            error.message || "Unable to upload image.";
+            error.message ||
+            "Unable to delete event.";
 
         message.style.color = "red";
     }
 }
 
 
-document
-    .querySelectorAll(".whatWeDoUploadForm")
-    .forEach(form => {
+async function loadStories() {
 
-        form.addEventListener(
-            "submit",
-            function (event) {
-                event.preventDefault();
-                uploadWhatWeDoImage(form);
-            }
+    const grid =
+        document.getElementById("storiesGrid");
+
+    const loading =
+        document.getElementById("storiesLoading");
+
+    if (!grid || !loading) {
+        return;
+    }
+
+    loading.textContent =
+        "Loading CCF Stories...";
+
+    grid.innerHTML = "";
+
+    try {
+
+        const response =
+            await authFetch(
+                `${API_URL}/api/admin/stories`,
+                {
+                    credentials: "include"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to load CCF Stories."
+            );
+        }
+
+        const stories =
+            Array.isArray(data.stories)
+                ? data.stories
+                : [];
+
+        loading.textContent =
+            stories.length
+                ? `${stories.length} story/stories.`
+                : "No CCF Stories found.";
+
+        stories.forEach(story => {
+
+            const card =
+                document.createElement("div");
+
+            card.style.cssText = `
+                border:1px solid #ddd;
+                border-radius:10px;
+                padding:12px;
+                background:#fff;
+                box-shadow:0 2px 8px rgba(0,0,0,0.08);
+            `;
+
+            const video =
+                document.createElement("video");
+
+            video.src =
+                `${API_URL}${story.url}`;
+
+            video.controls = true;
+            video.preload = "metadata";
+
+            video.style.cssText = `
+                width:100%;
+                max-height:220px;
+                background:#000;
+                border-radius:8px;
+                display:block;
+                margin-bottom:12px;
+            `;
+
+            const title =
+                document.createElement("h4");
+
+            title.textContent =
+                story.title || "Untitled story";
+
+            title.style.marginBottom = "8px";
+
+            const description =
+                document.createElement("p");
+
+            description.textContent =
+                story.description || "";
+
+            description.style.cssText = `
+                color:#555;
+                line-height:1.5;
+                margin-bottom:10px;
+            `;
+
+            const date =
+                document.createElement("small");
+
+            date.textContent =
+                story.createdAt
+                    ? new Date(story.createdAt).toLocaleString()
+                    : "";
+
+            date.style.cssText = `
+                display:block;
+                color:#777;
+                margin-bottom:10px;
+            `;
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.type = "button";
+            deleteButton.textContent =
+                "🗑️ Delete Story";
+
+            deleteButton.style.cssText = `
+                width:100%;
+                padding:10px;
+                border:0;
+                border-radius:6px;
+                background:#c62828;
+                color:white;
+                cursor:pointer;
+                font-weight:bold;
+            `;
+
+            deleteButton.addEventListener(
+                "click",
+                () => deleteStory(story.id)
+            );
+
+            card.appendChild(video);
+            card.appendChild(title);
+            card.appendChild(description);
+            card.appendChild(date);
+            card.appendChild(deleteButton);
+
+            grid.appendChild(card);
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Stories loading error:",
+            error
         );
 
+        loading.textContent =
+            error.message ||
+            "Unable to load CCF Stories.";
+
+        loading.style.color = "red";
+    }
+}
+
+
+async function deleteStory(id) {
+
+    if (!id) {
+        return;
+    }
+
+    if (
+        !window.confirm(
+            "Delete this CCF Story?\n\nThis will permanently delete the video and story information."
+        )
+    ) {
+        return;
+    }
+
+    const message =
+        document.getElementById("storyMessage");
+
+    message.textContent =
+        "Deleting story...";
+
+    try {
+
+        const response =
+            await authFetch(
+                `${API_URL}/api/admin/stories/${encodeURIComponent(id)}`,
+                {
+                    method: "DELETE",
+                    credentials: "include"
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message ||
+                "Unable to delete story."
+            );
+        }
+
+        message.textContent =
+            "✅ Story deleted successfully.";
+
+        await 
+document
+    .getElementById("eventUploadForm")
+    ?.addEventListener("submit", async function (event) {
+
+        event.preventDefault();
+
+        const message =
+            document.getElementById("eventMessage");
+
+        const title =
+            document.getElementById("eventTitle").value.trim();
+
+        const date =
+            document.getElementById("eventDate").value;
+
+        const location =
+            document.getElementById("eventLocation").value.trim();
+
+        const description =
+            document.getElementById("eventDescription").value.trim();
+
+        const imageInput =
+            document.getElementById("eventImage");
+
+        if (!title || !date || !location || !description) {
+            message.textContent =
+                "❌ Please complete all required event fields.";
+
+            message.style.color = "red";
+
+            return;
+        }
+
+        const formData =
+            new FormData();
+
+        formData.append("title", title);
+        formData.append("date", date);
+        formData.append("location", location);
+        formData.append("description", description);
+
+        if (imageInput.files.length > 0) {
+            const image =
+                imageInput.files[0];
+
+            if (!image.type.startsWith("image/")) {
+                message.textContent =
+                    "❌ Please select an image file.";
+
+                message.style.color = "red";
+
+                return;
+            }
+
+            formData.append("image", image);
+        }
+
+        message.textContent =
+            "Uploading event...";
+
+        message.style.color = "#087a42";
+
+        try {
+
+            const response =
+                await authFetch(
+                    `${API_URL}/api/admin/events`,
+                    {
+                        method: "POST",
+                        credentials: "include",
+                        body: formData
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.message ||
+                    "Unable to create event."
+                );
+            }
+
+            message.textContent =
+                "✅ Event added successfully.";
+
+            message.style.color =
+                "#087a42";
+
+            document
+                .getElementById("eventUploadForm")
+                .reset();
+
+            await loadEvents();
+
+        } catch (error) {
+
+            console.error(
+                "Event upload error:",
+                error
+            );
+
+            message.textContent =
+                error.message ||
+                "Unable to create event.";
+
+            message.style.color =
+                "red";
+        }
     });
+
+
+loadEvents();
+
+loadStories();
+
+    } catch (error) {
+
+        console.error(
+            "Story delete error:",
+            error
+        );
+
+        message.textContent =
+            "❌ " +
+            (
+                error.message ||
+                "Unable to delete story."
+            );
+    }
+}
+
+
+document
+    .getElementById("storyUploadForm")
+    ?.addEventListener(
+        "submit",
+        async function(event) {
+
+            event.preventDefault();
+
+            const titleInput =
+                document.getElementById("storyTitle");
+
+            const descriptionInput =
+                document.getElementById("storyDescription");
+
+            const videoInput =
+                document.getElementById("storyVideo");
+
+            const message =
+                document.getElementById("storyMessage");
+
+            const title =
+                titleInput.value.trim();
+
+            const description =
+                descriptionInput.value.trim();
+
+            const file =
+                videoInput.files[0];
+
+            if (!title || !description || !file) {
+                message.textContent =
+                    "Please provide the title, description and video.";
+
+                return;
+            }
+
+            if (!file.type.startsWith("video/")) {
+                message.textContent =
+                    "Only video files are allowed.";
+
+                videoInput.value = "";
+
+                return;
+            }
+
+            if (file.size > 200 * 1024 * 1024) {
+                message.textContent =
+                    "Video must be 200 MB or smaller.";
+
+                videoInput.value = "";
+
+                return;
+            }
+
+            const formData =
+                new FormData();
+
+            formData.append("title", title);
+            formData.append(
+                "description",
+                description
+            );
+            formData.append("video", file);
+
+            message.textContent =
+                "Uploading CCF Story...";
+
+            try {
+
+                const response =
+                    await authFetch(
+                        `${API_URL}/api/admin/stories`,
+                        {
+                            method: "POST",
+                            credentials: "include",
+                            body: formData
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.message ||
+                        "Unable to upload story."
+                    );
+                }
+
+                message.textContent =
+                    "✅ CCF Story uploaded successfully.";
+
+                titleInput.value = "";
+                descriptionInput.value = "";
+                videoInput.value = "";
+
+                await loadStories();
+
+            } catch (error) {
+
+                console.error(
+                    "Story upload error:",
+                    error
+                );
+
+                message.textContent =
+                    "❌ " +
+                    (
+                        error.message ||
+                        "Unable to upload story."
+                    );
+            }
+        }
+    );
+
 
 
 loadHomeSlides();
 loadGallery();
+loadStories();
 
 document
     .getElementById("galleryUploadForm")
@@ -2432,79 +2563,6 @@ document
             message.style.color = "red";
         }
 
-    });
-</script>
-
-
-<script>
-async function uploadImpactImage(form) {
-    const category = form.dataset.category;
-    const fileInput = form.querySelector('input[type="file"]');
-    const button = form.querySelector('button[type="submit"]');
-    const message = form.querySelector('.impact-upload-message');
-
-    if (!fileInput.files.length) {
-        message.textContent = "Please select an image.";
-        return;
-    }
-
-    const file = fileInput.files[0];
-
-    if (!file.type.startsWith("image/")) {
-        message.textContent = "Only image files are allowed.";
-        return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-        message.textContent = "Image must be 10MB or smaller.";
-        return;
-    }
-
-    const formData = new FormData();
-
-    // Category must be added before the image.
-    formData.append("category", category);
-    formData.append("image", file);
-
-    button.disabled = true;
-    message.textContent = "Uploading...";
-
-    try {
-        const response = await authFetch(
-            API_URL + "/api/admin/impact/upload",
-            {
-                method: "POST",
-                body: formData
-            }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message || "Upload failed."
-            );
-        }
-
-        message.textContent = "Image uploaded successfully.";
-        fileInput.value = "";
-
-    } catch (error) {
-        console.error("Impact image upload error:", error);
-        message.textContent =
-            error.message || "Unable to upload image.";
-    } finally {
-        button.disabled = false;
-    }
-}
-
-document
-    .querySelectorAll(".impactUploadForm")
-    .forEach(form => {
-        form.addEventListener("submit", event => {
-            event.preventDefault();
-            uploadImpactImage(form);
-        });
     });
 </script>
 
