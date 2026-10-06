@@ -437,7 +437,15 @@ const {
 
     readCampaign,
 
-    saveCampaign
+    saveCampaign,
+
+    readStories,
+
+    saveStories,
+
+    readEvents,
+
+    saveEvents
 
 } = require("./database");
 
@@ -4824,6 +4832,333 @@ app.delete(
 
     }
 );
+
+
+/*
+CCF STORIES THAT CREATE HOPE
+ADMIN: ADD STORY
+*/
+
+app.post(
+    "/api/admin/stories",
+    requireAdmin,
+    uploadVideo.single("video"),
+    (req, res) => {
+        try {
+            const title = String(req.body.title || "").trim();
+            const description = String(req.body.description || "").trim();
+
+            if (!req.file) {
+                return res.status(400).json({
+                    success: false,
+                    message: "No video was uploaded."
+                });
+            }
+
+            if (!title || !description) {
+                if (req.file.path && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Story title and description are required."
+                });
+            }
+
+            const stories = readStories();
+
+            const story = {
+                id: Date.now().toString(),
+                title,
+                description,
+                filename: req.file.filename,
+                originalName: req.file.originalname,
+                size: req.file.size,
+                mimetype: req.file.mimetype,
+                url: `/uploads/videos/${req.file.filename}`,
+                createdAt: new Date().toISOString()
+            };
+
+            stories.unshift(story);
+            saveStories(stories);
+
+            return res.status(201).json({
+                success: true,
+                message: "CCF Story uploaded successfully.",
+                story
+            });
+
+        } catch (error) {
+            console.error("CCF Story upload error:", error);
+
+            if (
+                req.file &&
+                req.file.path &&
+                fs.existsSync(req.file.path)
+            ) {
+                fs.unlinkSync(req.file.path);
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to upload CCF Story."
+            });
+        }
+    }
+);
+
+
+/*
+ADMIN: LIST STORIES
+*/
+
+app.get(
+    "/api/admin/stories",
+    requireAdmin,
+    (req, res) => {
+        return res.json({
+            success: true,
+            stories: readStories()
+        });
+    }
+);
+
+
+/*
+ADMIN: DELETE STORY
+*/
+
+app.delete(
+    "/api/admin/stories/:id",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const stories = readStories();
+
+            const index = stories.findIndex(
+                story => String(story.id) === String(req.params.id)
+            );
+
+            if (index === -1) {
+                return res.status(404).json({
+                    success: false,
+                    message: "CCF Story not found."
+                });
+            }
+
+            const story = stories[index];
+
+            if (story.filename) {
+                const videoPath =
+                    path.join(videosDir, path.basename(story.filename));
+
+                if (fs.existsSync(videoPath)) {
+                    fs.unlinkSync(videoPath);
+                }
+            }
+
+            stories.splice(index, 1);
+            saveStories(stories);
+
+            return res.json({
+                success: true,
+                message: "CCF Story deleted successfully."
+            });
+
+        } catch (error) {
+            console.error("CCF Story delete error:", error);
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to delete CCF Story."
+            });
+        }
+    }
+);
+
+
+/*
+PUBLIC: CCF STORIES
+*/
+
+app.get("/api/stories", (req, res) => {
+    try {
+        const stories = readStories()
+            .filter(story => story && story.url)
+            .sort(
+                (a, b) =>
+                    new Date(b.createdAt || 0) -
+                    new Date(a.createdAt || 0)
+            );
+
+        return res.json({
+            success: true,
+            stories
+        });
+
+    } catch (error) {
+        console.error("CCF Stories error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to load CCF Stories."
+        });
+    }
+});
+
+
+
+/* EVENTS */
+
+app.post(
+    "/api/admin/events",
+    requireAdmin,
+    upload.single("image"),
+    (req, res) => {
+        try {
+            const title = String(req.body.title || "").trim();
+            const date = String(req.body.date || "").trim();
+            const location = String(req.body.location || "").trim();
+            const description = String(req.body.description || "").trim();
+
+            if (!title || !date || !location || !description) {
+                if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+
+                return res.status(400).json({
+                    success: false,
+                    message: "Event title, date, location and description are required."
+                });
+            }
+
+            const events = readEvents();
+
+            const event = {
+                id: Date.now().toString(),
+                title,
+                date,
+                location,
+                description,
+                image: req.file
+                    ? `/uploads/gallery/${req.file.filename}`
+                    : null,
+                createdAt: new Date().toISOString()
+            };
+
+            events.unshift(event);
+            saveEvents(events);
+
+            return res.status(201).json({
+                success: true,
+                message: "Event created successfully.",
+                event
+            });
+
+        } catch (error) {
+            console.error("Event creation error:", error);
+
+            if (
+                req.file &&
+                req.file.path &&
+                fs.existsSync(req.file.path)
+            ) {
+                fs.unlinkSync(req.file.path);
+            }
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to create event."
+            });
+        }
+    }
+);
+
+app.get(
+    "/api/admin/events",
+    requireAdmin,
+    (req, res) => {
+        return res.json({
+            success: true,
+            events: readEvents()
+        });
+    }
+);
+
+app.delete(
+    "/api/admin/events/:id",
+    requireAdmin,
+    (req, res) => {
+        try {
+            const events = readEvents();
+
+            const index = events.findIndex(
+                event => String(event.id) === String(req.params.id)
+            );
+
+            if (index === -1) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Event not found."
+                });
+            }
+
+            const event = events[index];
+
+            if (event.image) {
+                const imagePath = path.join(
+                    galleryDir,
+                    path.basename(event.image)
+                );
+
+                if (fs.existsSync(imagePath)) {
+                    fs.unlinkSync(imagePath);
+                }
+            }
+
+            events.splice(index, 1);
+            saveEvents(events);
+
+            return res.json({
+                success: true,
+                message: "Event deleted successfully."
+            });
+
+        } catch (error) {
+            console.error("Event deletion error:", error);
+
+            return res.status(500).json({
+                success: false,
+                message: "Unable to delete event."
+            });
+        }
+    }
+);
+
+app.get("/api/events", (req, res) => {
+    try {
+        const events = readEvents()
+            .sort(
+                (a, b) =>
+                    new Date(a.date || a.createdAt || 0) -
+                    new Date(b.date || b.createdAt || 0)
+            );
+
+        return res.json({
+            success: true,
+            events
+        });
+
+    } catch (error) {
+        console.error("Events error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Unable to load events."
+        });
+    }
+});
 
 /* PUBLIC: VIDEOS */
 app.get("/api/videos", (req, res) => {

@@ -211,3 +211,71 @@ function saveCampaign(campaign) {
 
 module.exports.readCampaign = readCampaign;
 module.exports.saveCampaign = saveCampaign;
+
+const storiesFile = path.join(uploadsDir, "stories.json");
+
+function readStories() {
+    try {
+        if (!fs.existsSync(storiesFile)) {
+            fs.writeFileSync(
+                storiesFile,
+                "[]",
+                "utf8"
+            );
+        }
+
+        return JSON.parse(
+            fs.readFileSync(storiesFile, "utf8")
+        );
+    } catch (error) {
+        console.error("Stories read error:", error);
+        return [];
+    }
+}
+
+function saveStories(stories) {
+    fs.writeFileSync(
+        storiesFile,
+        JSON.stringify(stories, null, 2),
+        "utf8"
+    );
+
+    return stories;
+}
+
+module.exports.readStories = readStories;
+module.exports.saveStories = saveStories;
+
+const eventsFile = path.join(uploadsDir, "events.json");
+
+function readEvents() {
+    try {
+        if (!fs.existsSync(eventsFile)) {
+            fs.writeFileSync(
+                eventsFile,
+                "[]",
+                "utf8"
+            );
+        }
+
+        return JSON.parse(
+            fs.readFileSync(eventsFile, "utf8")
+        );
+    } catch (error) {
+        console.error("Events read error:", error);
+        return [];
+    }
+}
+
+function saveEvents(events) {
+    fs.writeFileSync(
+        eventsFile,
+        JSON.stringify(events, null, 2),
+        "utf8"
+    );
+
+    return events;
+}
+
+module.exports.readEvents = readEvents;
+module.exports.saveEvents = saveEvents;
